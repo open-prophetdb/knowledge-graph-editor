@@ -18,8 +18,25 @@ import type {
   GraphTableData,
   DeleteKnowledgeByIdFn,
 } from "biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t";
+import type {
+  Options,
+  GroupOptions,
+  GroupOptionType,
+  OptionType,
+  RelationStat,
+  EntityStat,
+  Entity,
+  CachedData,
+} from "./utils";
+import {
+  formatEntityTypeOptions,
+  fetchEntities,
+  formatKeySentenceOptions,
+  formatRelationTypeOptions,
+} from "./utils";
 
 import "./index.less";
+import { uniqBy } from "lodash";
 
 const TextArea = Input.TextArea;
 
@@ -44,8 +61,10 @@ type Pagination = {
 
 type GraphTableProps = {
   data: GraphTableData;
-  keySentences?: string[];
-  getEntityTypes?: () => Promise<any>;
+  keySentences: string[];
+  relationStat: RelationStat[];
+  entityStat: EntityStat[];
+  matchedEntities?: Array<Entity>;
   update?: (record: GraphEdge) => void;
   delete?: DeleteKnowledgeByIdFn;
   onChange?: (pagination: Pagination) => void;
@@ -62,6 +81,16 @@ interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   placeholder?: string;
   options?: any[];
+  onSearch?: (
+    entityType: string,
+    value: string,
+    callback: (any: any) => void
+  ) => void;
+  entityType?: string;
+  updateCachedDataItem?: (
+    key: string,
+    item: Entity | string | OptionType
+  ) => void;
 }
 
 const EditableCell: React.FC<EditableCellProps> = ({
@@ -73,9 +102,71 @@ const EditableCell: React.FC<EditableCellProps> = ({
   index,
   children,
   placeholder,
+  entityType,
   options,
+  onSearch,
+  updateCachedDataItem,
   ...restProps
 }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectOptions, setSelectOptions] = useState<Options | GroupOptions>(
+    options || []
+  );
+
+  console.log("EditableCell: ", options, selectOptions, loading, onSearch);
+
+  // Only for selecting entity id
+  const mergeOptions = (
+    historyOptions: OptionType[],
+    newOptions: OptionType[]
+  ) => {
+    const mergedOptions = [
+      {
+        label: "History",
+        options: historyOptions,
+      },
+      {
+        label: "Search Results",
+        options: newOptions,
+      },
+    ];
+
+    const index = selectOptions.findIndex(
+      (option) => option.label === "Search Results"
+    );
+
+    if (index >= 0) {
+      const searchOptions = selectOptions[index] as GroupOptionType;
+      if (searchOptions && searchOptions.options) {
+        mergedOptions[1].options = uniqBy(
+          [...searchOptions.options, ...newOptions],
+          "value"
+        );
+      }
+    }
+
+    setSelectOptions(mergedOptions);
+  };
+
+  const loadOptions = () => {
+    const cachedData =
+      window.localStorage.getItem("cached-kg-editor-data") || "{}";
+    if (cachedData) {
+      const parsedData = JSON.parse(cachedData);
+      if (parsedData.entityOptions) {
+        return parsedData.entityOptions;
+      }
+    }
+
+    return [];
+  };
+
+  useEffect(() => {
+    if (entityType) {
+      mergeOptions(loadOptions(), options || []);
+    }
+  }, []);
+
   const inputNode =
     inputType === "text" ? (
       <TextArea rows={8} placeholder="Please input key sentence!" />
@@ -85,8 +176,36 @@ const EditableCell: React.FC<EditableCellProps> = ({
         allowClear
         defaultActiveFirstOption={false}
         placeholder={placeholder}
-        options={options}
+        // @ts-ignore
+        options={selectOptions}
         filterOption={false}
+        loading={loading}
+        onSearch={(value) => {
+          if (onSearch && entityType && value) {
+            setSelectOptions(options || []);
+            setLoading(true);
+            onSearch(entityType, value, (data: any) => {
+              setLoading(false);
+
+              mergeOptions(loadOptions(), data);
+            });
+          }
+        }}
+        onFocus={() => {
+          if (entityType) {
+            mergeOptions(loadOptions(), options || []);
+          }
+        }}
+        onSelect={(value, option) => {
+          if (updateCachedDataItem && entityType) {
+            // Keep the selected entity in cache for future use
+            updateCachedDataItem("entityOptions", {
+              label: option.label,
+              value: value,
+              order: 0,
+            });
+          }
+        }}
         notFoundContent={
           <Empty description={options ? placeholder : "Not Found"} />
         }
@@ -115,45 +234,51 @@ const EditableCell: React.FC<EditableCellProps> = ({
   );
 };
 
-type Entity = {
-  idx: number;
-  id: string;
-  name: string;
-  label: string;
-  resource: string;
-  taxid: string;
-  description?: string;
-};
-
 const GraphTable: React.FC<GraphTableProps> = (props) => {
   const [form] = Form.useForm();
+  const [cachedData, setCachedData] = useState<CachedData>({});
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [optionsMap, setOptionsMap] = useState<Record<string, Array<Entity>>>({
-    "Gene:Test": [
-      {
-        idx: 0,
-        id: "1",
-        name: "Gene1",
-        label: "Gene",
-        resource: "Test",
-        taxid: "9606",
-      },
-      {
-        idx: 1,
-        id: "2",
-        name: "Gene2",
-        label: "Gene",
-        resource: "Test",
-        taxid: "9606",
-      },
-    ],
-  });
+  const [entityTypeOptions, setEntityTypeOptions] = useState<Options>([]);
+
+  useEffect(() => {
+    const cachedData = loadCachedData();
+    setCachedData(cachedData);
+
+    setEntityTypeOptions(formatEntityTypeOptions(props.entityStat));
+  }, []);
 
   const [editingKey, setEditingKey] = useState("");
 
   const genRowKey = (record: GraphEdge) => {
     return `${record.source_name}:${record.target_name}`;
+  };
+
+  const loadCachedData = () => {
+    const cachedData = JSON.parse(
+      window.localStorage.getItem("cached-kg-editor-data") || "{}"
+    );
+    return cachedData;
+  };
+
+  const getCachedDataItem = (key: string) => {
+    if (cachedData[key]) {
+      return cachedData[key];
+    } else {
+      return [];
+    }
+  };
+
+  const updateCachedDataItem = (key: string, item: Entity | string) => {
+    if (cachedData[key]) {
+      cachedData[key].push(item);
+    } else {
+      cachedData[key] = [item];
+    }
+    window.localStorage.setItem(
+      "cached-kg-editor-data",
+      JSON.stringify(cachedData)
+    );
   };
 
   const isEditing = (record: GraphEdge) => genRowKey(record) === editingKey;
@@ -356,66 +481,43 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
     },
   ];
 
-  const formatLabelOption = (item: Entity) => {
-    if (item.label == "Gene") {
-      // TODO: How to deal with multiple species in the future?
-      if (item.taxid) {
-        return `${item.name} | ${item.id} | ${item.taxid} | ${item.resource}`;
-      } else {
-        return `${item.name} | ${item.id} | Unknown | ${item.resource}`;
-      }
-    } else {
-      return `${item.name} | ${item.id} | ${item.resource}`;
-    }
-  };
-
-  const formatKeySentenceOptions = (keySentences: string[] | undefined) => {
-    if (keySentences) {
-      return keySentences.map((item: string) => ({
-        label: item,
-        value: item,
-      }));
-    } else {
-      return [];
-    }
-  };
-
-  const formatEntityIdOptions = (entities: Entity[] | undefined) => {
-    if (!entities) {
-      return [
-        {
-          label: "Unknown",
-          value: "Unknown",
-        },
-      ];
-    } else {
-      const formatedData = entities.map((item: Entity) => ({
-        value: `${item["id"]}`,
-        text: formatLabelOption(item),
-      }));
-      console.log("Get Entities: ", formatedData, entities);
-      // const options = formatedData.map(d => <Option key={d.value}>{d.text}</Option>);
-      const options = formatedData.map((d: any) => {
-        return { label: d.text, value: d.value };
-      });
-
-      return options;
-    }
-  };
-
   const mergedColumns = columns.map((col) => {
     if (
-      [
-        "actions",
-        "pmid",
-        "created_at",
-        "source_name",
-        "target_name",
-        "source_type",
-        "target_type",
-      ].includes(col.key as string)
+      ["actions", "pmid", "created_at", "source_name", "target_name"].includes(
+        col.key as string
+      )
     ) {
       return col;
+    }
+
+    if (col.key === "source_type") {
+      return {
+        ...col,
+        onCell: (record: GraphEdge) => ({
+          record,
+          inputType: "select",
+          dataIndex: "source_type",
+          title: col.title,
+          editing: isEditing(record),
+          options: entityTypeOptions,
+          placeholder: "Please select source type!",
+        }),
+      };
+    }
+
+    if (col.key === "target_type") {
+      return {
+        ...col,
+        onCell: (record: GraphEdge) => ({
+          record,
+          inputType: "select",
+          dataIndex: "target_type",
+          title: col.title,
+          editing: isEditing(record),
+          options: entityTypeOptions,
+          placeholder: "Please select target type!",
+        }),
+      };
     }
 
     if (col.key === "source_id") {
@@ -427,10 +529,11 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           dataIndex: "source_id",
           title: col.title,
           editing: isEditing(record),
-          options: formatEntityIdOptions(
-            optionsMap[`${record.source_type}:${record.source_name}`]
-          ),
+          options: [],
           placeholder: "Please select source id!",
+          onSearch: fetchEntities,
+          entityType: record.source_type,
+          updateCachedDataItem: updateCachedDataItem,
         }),
       };
     }
@@ -444,10 +547,11 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           dataIndex: "target_id",
           title: col.title,
           editing: isEditing(record),
-          options: formatEntityIdOptions(
-            optionsMap[`${record.target_type}:${record.target_name}`]
-          ),
+          options: [],
           placeholder: "Please select target id!",
+          onSearch: fetchEntities,
+          entityType: record.target_type,
+          updateCachedDataItem: updateCachedDataItem,
         }),
       };
     }
@@ -461,10 +565,11 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           dataIndex: "relation_type",
           title: col.title,
           editing: isEditing(record),
-          options: [
-            { label: "relation_type1", value: "relation_type1" },
-            { label: "relation_type2", value: "relation_type2" },
-          ],
+          options: formatRelationTypeOptions(
+            props.relationStat,
+            record.source_type,
+            record.target_type
+          ),
           placeholder: "Please select relation type!",
         }),
       };

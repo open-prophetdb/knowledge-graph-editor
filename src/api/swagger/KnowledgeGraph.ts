@@ -3,6 +3,11 @@
 import request from 'umi-request';
 
 request.extendOptions({
+  // prefix: 'https://drugs.3steps.cn',
+  // headers: {
+  //   'Content-Type': 'application/json',
+  //   'Authorization': 'Basic bWVjZnMtbm06bm1AbWdo'
+  // },
   prefix: 'http://localhost:8000',
   timeout: 1000 * 60 * 60,
 });

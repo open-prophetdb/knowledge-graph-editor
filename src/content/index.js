@@ -1,11 +1,14 @@
 // eslint-disable-next-line no-undef
 /*global chrome*/
 import { useEffect, useState } from "react";
-import { Row, Modal, message } from "antd";
+import { Row, Modal, message, Button } from "antd";
+import { CloudSyncOutlined, RestOutlined } from "@ant-design/icons";
 import ReactDOM from "react-dom";
-
 import TableEditor from "./components/TableEditor";
 import { exampleData } from "./components/TableEditor";
+import { fetchStatistics } from "@/api/swagger/KnowledgeGraph";
+import ButtonGroup from "antd/es/button/button-group";
+
 import Icon from "./images/icon.png";
 
 import "./index.less";
@@ -34,6 +37,32 @@ const formatLabel = (label) => {
     return labelMap[lowerc_label];
   } else {
     return label;
+  }
+};
+
+const formatStat = (stat) => {
+  // Make sure the stat is compatible with the current version
+  if (stat.relationship_stat && stat.node_stat) {
+    return {
+      entity_stat: stat.node_stat.map((node) => {
+        return {
+          resource: node.source,
+          entity_type: node.node_type.replace(/\s+/g, ""),
+          entity_count: node.node_count,
+        };
+      }),
+      relation_stat: stat.relationship_stat.map((relation) => {
+        return {
+          resource: relation.source,
+          relation_type: relation.relation_type,
+          relation_count: relation.relation_count,
+          start_entity_type: relation.start_node_type.replace(/\s+/g, ""),
+          end_entity_type: relation.end_node_type.replace(/\s+/g, ""),
+        };
+      }),
+    };
+  } else {
+    return stat;
   }
 };
 
@@ -107,7 +136,9 @@ const getUser = () => {
 
 const getAnnotations = () => {
   // More details about getting the current url, please access https://stackoverflow.com/a/59434377
-  const url = window.location.href;
+  // const url = window.location.href;
+  const url =
+    "https://prophet-studio.3steps.cn/projects/14/data?tab=38&task=17696";
   // Parse the url to get all the parameters
   let params = new URL(url).searchParams;
   console.log("params", url, params);
@@ -162,10 +193,12 @@ const filterAnnotations = (annotations, curator) => {
 };
 
 function Content() {
+  const [refreshKey, setRefreshKey] = useState(0);
   const [editorModalVisiable, setEditorModalVisiable] = useState(false);
   const [data, setData] = useState({});
   const [curator, setCurator] = useState(""); // TODO: Get the current user from the backend
   const [keySentences, setKeySentences] = useState([]);
+  const [statistics, setStatistics] = useState({});
 
   const loadData = () => {
     return new Promise((resolve, reject) => {
@@ -225,6 +258,18 @@ function Content() {
 
   useEffect(() => {
     loadData();
+    fetchStatistics()
+      .then((response) => {
+        console.log("statistics", response);
+        setStatistics(formatStat(response));
+      })
+      .catch((error) => {
+        console.log(error);
+        message.error(
+          "Failed to get statistics, please check the network connection."
+        );
+        setStatistics({});
+      });
   }, []);
 
   const handleOk = () => {
@@ -236,23 +281,32 @@ function Content() {
     setEditorModalVisiable(false);
   };
 
+  const updateTable = () => {
+    loadData()
+      .then((response) => {
+        message.success(
+          `Found ${response.tableData.total} knowledges and ${response.keySentences.length} key sentences, please annotate them in the knowledge graph editor.`
+        );
+        setEditorModalVisiable(true);
+      })
+      .catch((error) => {
+        console.log("Cannot get annotations, error message is", error);
+        message.warning(`${error}`, 30);
+      });
+  };
+
+  const cleanCache = () => {
+    window.localStorage.removeItem("cached-kg-editor-data");
+    message.success("Clean cache successfully.");
+    setRefreshKey(refreshKey + 1);
+  };
+
   return (
     <Row className="knowledge-editor-fixed-content">
       <div
         className="knowledge-editor-fixed-button"
         onClick={() => {
           if (!data.total && !keySentences.length) {
-            // loadData()
-            //   .then((response) => {
-            //     message.success(
-            //       `Found ${response.tableData.total} knowledges and ${response.keySentences.length} key sentences, please annotate them in the knowledge graph editor.`
-            //     );
-            //     setEditorModalVisiable(true);
-            //   })
-            //   .catch((error) => {
-            //     console.log("Cannot get annotations, error message is", error);
-            //     message.warning(`${error}`, 30);
-            //   });
             const error = `No annotations found for the current user (${curator}) yet, please annotate them first.`;
             message.warning(`${error}`, 20);
           } else if (data.total === 0 || !data.total) {
@@ -278,12 +332,34 @@ function Content() {
         footer={null}
         onCancel={handleCancel}
       >
-        <p className="desc">
-          NOTE: You can check the attributes of a knowledge one by one and click
-          update button to submit. Please keep the knowledges same with the
-          curation that you have done in the previous step.
-        </p>
-        <TableEditor data={data} keySentences={keySentences} />
+        <Row className="header">
+          <p className="desc">
+            NOTE: You can check the attributes of a knowledge one by one and
+            click update button to submit. Please keep the knowledges same with
+            the curation that you have done in the previous step. If you
+            encounter the disordered options in the dropdown list, please click
+            the `Clean Cache` button and try again.
+          </p>
+          <ButtonGroup>
+            <Button danger onClick={cleanCache} icon={<RestOutlined />}>
+              Clean Cache
+            </Button>
+            <Button
+              type="primary"
+              onClick={updateTable}
+              icon={<CloudSyncOutlined />}
+            >
+              Update Table
+            </Button>
+          </ButtonGroup>
+        </Row>
+        <TableEditor
+          key={refreshKey}
+          data={data}
+          keySentences={keySentences}
+          entityStat={statistics.entity_stat}
+          relationStat={statistics.relation_stat}
+        />
       </Modal>
     </Row>
   );
