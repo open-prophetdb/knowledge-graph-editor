@@ -21,8 +21,9 @@
     }
   ],
   "permissions": [
-    "storage",
-    "declarativeContent"
+    "tabs",
+    "activeTab",
+    "storage"
   ],
   "host_permissions": [],
   "web_accessible_resources": [

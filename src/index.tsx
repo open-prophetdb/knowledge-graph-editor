@@ -1,12 +1,17 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+import React from "react";
+import ReactDOM from "react-dom";
+import { ConfigProvider } from "antd";
+import enUS from "antd/lib/locale/en_US";
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+import Popup from "./popup";
+
+const antdConfig = {
+  locale: enUS,
+};
+
+ReactDOM.render(
+  <ConfigProvider {...antdConfig}>
+    <Popup />
+  </ConfigProvider>,
+  document.getElementById("root")
 );

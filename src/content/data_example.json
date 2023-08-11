@@ -1,0 +1,509 @@
+{
+    "id": 17696,
+    "predictions": [],
+    "annotations": [
+        {
+            "id": 6608,
+            "created_username": " yjcyxky@163.com, 7",
+            "created_ago": "3 months, 3 weeks",
+            "completed_by": {
+                "id": 7,
+                "first_name": "",
+                "last_name": "",
+                "avatar": null,
+                "email": "yjcyxky@163.com",
+                "initials": "yj"
+            },
+            "result": [
+                {
+                    "id": "WUAOjks8tK",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "Short-chain fatty acids (SCFAs) are the primary metabolites of gut bacteria, which are derived from the fermentation of dietary fibers. They activate G-protein-coupled receptor (GPCR) signaling, suppress histone deacetylase (HDAC) activity, and inhibit inflammation, facilitating the maintenance of gut health and biofunction. The aforementioned gut microbiota dysbiosis reduces SCFA levels. Treatment targeting SCFA/GPCR signaling may alleviate air pollution-associated inflammation and metabolic disorders, which involve lung-gut axis disruption.",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "key_sentence"
+                        ],
+                        "endOffset": 1286,
+                        "startOffset": 738,
+                        "globalOffsets": {
+                            "end": 1286,
+                            "start": 738
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "w9R5Tur1-c",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "Short-chain fatty acids (SCFAs)",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "metabolite"
+                        ],
+                        "endOffset": 769,
+                        "startOffset": 738,
+                        "globalOffsets": {
+                            "end": 769,
+                            "start": 738
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "_RcRjcsZjZ",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "G-protein-coupled receptor (GPCR) signaling",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "pathway"
+                        ],
+                        "endOffset": 931,
+                        "startOffset": 888,
+                        "globalOffsets": {
+                            "end": 931,
+                            "start": 888
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "YHMDK-WVvp",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "histone deacetylase (HDAC)",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "protein"
+                        ],
+                        "endOffset": 968,
+                        "startOffset": 942,
+                        "globalOffsets": {
+                            "end": 968,
+                            "start": 942
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "vpuoLkfhBA",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "metabolic disorders",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "disease"
+                        ],
+                        "endOffset": 1245,
+                        "startOffset": 1226,
+                        "globalOffsets": {
+                            "end": 1245,
+                            "start": 1226
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "Va1davxMtB",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "lung-gut axis disruption",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "disease"
+                        ],
+                        "endOffset": 1285,
+                        "startOffset": 1261,
+                        "globalOffsets": {
+                            "end": 1285,
+                            "start": 1261
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "gfQuoYZDLU",
+                    "type": "choices",
+                    "value": {
+                        "choices": [
+                            "UNKNOWN"
+                        ]
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "valid"
+                },
+                {
+                    "id": "ePi5ozUlBM",
+                    "type": "rating",
+                    "value": {
+                        "rating": 5
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "rating"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "_RcRjcsZjZ",
+                    "labels": [
+                        "associated_with",
+                        "activated_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "left"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "YHMDK-WVvp",
+                    "labels": [
+                        "associated_with",
+                        "inhibited_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "left"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "vpuoLkfhBA",
+                    "labels": [
+                        "associated_with",
+                        "alleviated_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "right"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "Va1davxMtB",
+                    "labels": [
+                        "associated_with",
+                        "alleviated_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "right"
+                }
+            ],
+            "was_cancelled": false,
+            "ground_truth": false,
+            "created_at": "2023-04-20T03:25:13.414362Z",
+            "updated_at": "2023-08-11T01:20:30.753266Z",
+            "lead_time": 1226.7440000000004,
+            "last_action": null,
+            "task": 17696,
+            "project": 14,
+            "updated_by": 1,
+            "parent_prediction": null,
+            "parent_annotation": null,
+            "last_created_by": null
+        },
+        {
+            "id": 6967,
+            "created_username": " clinico-omics@prophetdb.org, 1",
+            "created_ago": "0 minutes",
+            "completed_by": {
+                "id": 1,
+                "first_name": "",
+                "last_name": "",
+                "avatar": null,
+                "email": "clinico-omics@prophetdb.org",
+                "initials": "cl"
+            },
+            "result": [
+                {
+                    "id": "WUAOjks8tK",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "Short-chain fatty acids (SCFAs) are the primary metabolites of gut bacteria, which are derived from the fermentation of dietary fibers. They activate G-protein-coupled receptor (GPCR) signaling, suppress histone deacetylase (HDAC) activity, and inhibit inflammation, facilitating the maintenance of gut health and biofunction. The aforementioned gut microbiota dysbiosis reduces SCFA levels. Treatment targeting SCFA/GPCR signaling may alleviate air pollution-associated inflammation and metabolic disorders, which involve lung-gut axis disruption.",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "key_sentence"
+                        ],
+                        "endOffset": 1286,
+                        "startOffset": 738,
+                        "globalOffsets": {
+                            "end": 1286,
+                            "start": 738
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "w9R5Tur1-c",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "Short-chain fatty acids (SCFAs)",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "metabolite"
+                        ],
+                        "endOffset": 769,
+                        "startOffset": 738,
+                        "globalOffsets": {
+                            "end": 769,
+                            "start": 738
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "_RcRjcsZjZ",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "G-protein-coupled receptor (GPCR) signaling",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "pathway"
+                        ],
+                        "endOffset": 931,
+                        "startOffset": 888,
+                        "globalOffsets": {
+                            "end": 931,
+                            "start": 888
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "YHMDK-WVvp",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "histone deacetylase (HDAC)",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "protein"
+                        ],
+                        "endOffset": 968,
+                        "startOffset": 942,
+                        "globalOffsets": {
+                            "end": 968,
+                            "start": 942
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "vpuoLkfhBA",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "metabolic disorders",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "disease"
+                        ],
+                        "endOffset": 1245,
+                        "startOffset": 1226,
+                        "globalOffsets": {
+                            "end": 1245,
+                            "start": 1226
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "Va1davxMtB",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "lung-gut axis disruption",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "disease"
+                        ],
+                        "endOffset": 1285,
+                        "startOffset": 1261,
+                        "globalOffsets": {
+                            "end": 1285,
+                            "start": 1261
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "id": "gfQuoYZDLU",
+                    "type": "choices",
+                    "value": {
+                        "choices": [
+                            "UNKNOWN"
+                        ]
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "valid"
+                },
+                {
+                    "id": "ePi5ozUlBM",
+                    "type": "rating",
+                    "value": {
+                        "rating": 5
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "rating"
+                },
+                {
+                    "id": "11Hm0zEoXO",
+                    "type": "labels",
+                    "value": {
+                        "end": "/text()[1]",
+                        "text": "Cigarette smoking (CS) ",
+                        "start": "/text()[1]",
+                        "labels": [
+                            "disease"
+                        ],
+                        "endOffset": 23,
+                        "startOffset": 0,
+                        "globalOffsets": {
+                            "end": 23,
+                            "start": 0
+                        }
+                    },
+                    "origin": "manual",
+                    "to_name": "text",
+                    "from_name": "label"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "_RcRjcsZjZ",
+                    "labels": [
+                        "associated_with",
+                        "activated_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "left"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "YHMDK-WVvp",
+                    "labels": [
+                        "associated_with",
+                        "inhibited_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "left"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "vpuoLkfhBA",
+                    "labels": [
+                        "associated_with",
+                        "alleviated_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "right"
+                },
+                {
+                    "type": "relation",
+                    "to_id": "Va1davxMtB",
+                    "labels": [
+                        "associated_with",
+                        "alleviated_by"
+                    ],
+                    "from_id": "w9R5Tur1-c",
+                    "direction": "right"
+                }
+            ],
+            "was_cancelled": false,
+            "ground_truth": false,
+            "created_at": "2023-08-11T01:20:42.485525Z",
+            "updated_at": "2023-08-11T01:20:42.485557Z",
+            "lead_time": 8.244,
+            "last_action": null,
+            "task": 17696,
+            "project": 14,
+            "updated_by": 1,
+            "parent_prediction": null,
+            "parent_annotation": 6608,
+            "last_created_by": null
+        }
+    ],
+    "drafts": [],
+    "annotators": [
+        1,
+        7
+    ],
+    "inner_id": 1,
+    "cancelled_annotations": 0,
+    "total_annotations": 2,
+    "total_predictions": 0,
+    "completed_at": "2023-08-11T01:20:42.485525Z",
+    "annotations_results": "[{id:WUAOjks8tK, type:labels, value:{end:\\/text()[1], text:Short-chain fatty acids (SCFAs) are the primary metabolites of gut bacteria, which are derived from the fermentation of dietary fibers. They activate G-protein-coupled receptor (GPCR) signaling, suppress histone deacetylase (HDAC) activity, and inhibit inflammation, facilitating the maintenance of gut health and biofunction. The aforementioned gut microbiota dysbiosis reduces SCFA levels. Treatment targeting SCFA\\/GPCR sign",
+    "predictions_results": "",
+    "predictions_score": null,
+    "file_upload": "ac66ad6d-metadata_toxicology-knowledgebase_20230419-ZihanRan.json",
+    "storage_filename": null,
+    "annotations_ids": "6608,6967",
+    "predictions_model_versions": "",
+    "avg_lead_time": 617.4940000000001,
+    "updated_by": [
+        {
+            "user_id": 1
+        }
+    ],
+    "data": {
+        "doi": "10.3390/cells12060901",
+        "pdf": "<embed src='https://publications.3steps.cn/publications/pdf/36980242.pdf' width='100%' height='600px' type='application/pdf'>",
+        "tag": "ZihanRan",
+        "html": "https://publications-api.3steps.cn/publications/html/36980242.html?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=6HWZ77RCQZ10V5CTHX3U%2F20230811%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230811T012048Z&X-Amz-Expires=60&X-Amz-SignedHeaders=host&X-Amz-Signature=e93e796f990294c79a53adda78cfdef8cb85553e1652ebe78e8ddbe82fc38fff",
+        "pmid": 36980242,
+        "pmcid": "10047528",
+        "title": "Targeting Lung-Gut Axis for Regulating Pollution Particle-Mediated Inflammation and Metabolic Disorders.",
+        "authors": "Cheng WL, Chang CC, Luo CS, Chen KY, Yeh YK, Zheng JQ, Wu SM",
+        "journal": "Cells",
+        "abstract": "Cigarette smoking (CS) or ambient particulate matter (PM) exposure is a risk factor for metabolic disorders, such as insulin resistance (IR), increased plasma triglycerides, hyperglycemia, and diabetes mellitus (DM); it can also cause gut microbiota dysbiosis. In smokers with metabolic disorders, CS cessation decreases the risks of serious pulmonary events, inflammation, and metabolic disorder. This review included recent studies examining the mechanisms underlying the effects of CS and PM on gut microbiota dysbiosis and metabolic disorder development; one of the potential mechanisms is the disruption of the lung-gut axis, leading to gut microbiota dysbiosis, intestinal dysfunction, systemic inflammation, and metabolic disease. Short-chain fatty acids (SCFAs) are the primary metabolites of gut bacteria, which are derived from the fermentation of dietary fibers. They activate G-protein-coupled receptor (GPCR) signaling, suppress histone deacetylase (HDAC) activity, and inhibit inflammation, facilitating the maintenance of gut health and biofunction. The aforementioned gut microbiota dysbiosis reduces SCFA levels. Treatment targeting SCFA/GPCR signaling may alleviate air pollution-associated inflammation and metabolic disorders, which involve lung-gut axis disruption.",
+        "doi_link": "https://doi.org/10.3390/cells12060901",
+        "pmc_link": "https://www.ncbi.nlm.nih.gov/pmc/articles/10047528",
+        "publication": "2023",
+        "pubmed_link": "https://pubmed.ncbi.nlm.nih.gov/36980242",
+        "journal_abbr": "Cells",
+        "impact_factor": 7.666,
+        "imported_date": "2023-04-20"
+    },
+    "meta": {},
+    "created_at": "2023-04-20T03:00:33.131991Z",
+    "updated_at": "2023-08-11T01:20:42.852092Z",
+    "is_labeled": true,
+    "overlap": 1,
+    "comment_count": 0,
+    "unresolved_comment_count": 0,
+    "last_comment_updated_at": null,
+    "project": 14,
+    "comment_authors": []
+}
