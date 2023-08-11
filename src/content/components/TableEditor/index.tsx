@@ -18,6 +18,12 @@ import type {
   GraphTableData,
   DeleteKnowledgeByIdFn,
 } from "biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t";
+import {
+  deleteCuratedKnowledge,
+  putCuratedKnowledge,
+  postCuratedKnowledge,
+  // @ts-ignore
+} from "@/api/swagger/KnowledgeGraph";
 import type {
   Options,
   GroupOptions,
@@ -33,10 +39,12 @@ import {
   fetchEntities,
   formatKeySentenceOptions,
   formatRelationTypeOptions,
+  makeQueryKnowledgeStr,
 } from "./utils";
 
 import "./index.less";
-import { uniqBy } from "lodash";
+import { uniq, uniqBy, isEqual } from "lodash";
+import { fetchCuratedKnowledges } from "../../../api/swagger/KnowledgeGraph";
 
 const TextArea = Input.TextArea;
 
@@ -65,8 +73,6 @@ type GraphTableProps = {
   relationStat: RelationStat[];
   entityStat: EntityStat[];
   matchedEntities?: Array<Entity>;
-  update?: (record: GraphEdge) => void;
-  delete?: DeleteKnowledgeByIdFn;
   onChange?: (pagination: Pagination) => void;
   height?: number | string;
 };
@@ -113,7 +119,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
     options || []
   );
 
-  console.log("EditableCell: ", options, selectOptions, loading, onSearch);
+  // console.log("EditableCell: ", options, selectOptions, loading, onSearch);
 
   // Only for selecting entity id
   const mergeOptions = (
@@ -236,6 +242,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
 
 const GraphTable: React.FC<GraphTableProps> = (props) => {
   const [form] = Form.useForm();
+  const [data, setData] = useState<GraphEdge[]>(props.data.data || []);
   const [cachedData, setCachedData] = useState<CachedData>({});
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -246,6 +253,55 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
     setCachedData(cachedData);
 
     setEntityTypeOptions(formatEntityTypeOptions(props.entityStat));
+
+    const pmids = uniq(data.map((item) => item.pmid));
+    const curators = uniq(data.map((item) => item.curator));
+
+    if (pmids && pmids.length == 1 && curators && curators.length == 1) {
+      fetchCuratedKnowledges({
+        page: page,
+        page_size: pageSize,
+        query_str: makeQueryKnowledgeStr({
+          pmid: pmids[0],
+          curator: curators[0],
+        }),
+      })
+        .then((response: any) => {
+          console.log("Fetch curated knowledges: ", response);
+          // Merge the data from database and the data from the table
+          // If the data from the table is not same with the data from the database, we will use the data from the database, otherwise we will use the data from the table.
+          const records = response.records;
+          const newData = [...data];
+          records.forEach((record: GraphEdge) => {
+            const index = newData.findIndex(
+              (item) => genRowKey(item) === genRowKey(record)
+            );
+            if (index > -1) {
+              const item = newData[index];
+              newData.splice(index, 1, {
+                ...item,
+                ...record,
+              });
+            } else {
+              newData.push(record);
+            }
+          });
+
+          setData(newData);
+          message.success("Fetch curated knowledges successfully!");
+        })
+        .catch((error: any) => {
+          console.log("Fetch curated knowledges error: ", error);
+          message.error(
+            "Cannot fetch curated knowledges, please contact your administrator or try again later!"
+          );
+        });
+    } else {
+      console.log("Cannot fetch curated knowledges: ", pmids, curators);
+      message.error(
+        "Cannot fetch curated knowledges, there are multiple pmids or curators!"
+      );
+    }
   }, []);
 
   const [editingKey, setEditingKey] = useState("");
@@ -272,6 +328,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
   const updateCachedDataItem = (key: string, item: Entity | string) => {
     if (cachedData[key]) {
       cachedData[key].push(item);
+      cachedData[key] = uniqBy(cachedData[key], "value");
     } else {
       cachedData[key] = [item];
     }
@@ -297,7 +354,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       title: "Source Name",
       dataIndex: "source_name",
       key: "source_name",
-      align: "center",
+      align: "left",
       fixed: "left",
       width: 200,
     },
@@ -352,6 +409,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       align: "center",
       key: "key_sentence",
       width: 150,
+      ellipsis: true,
     },
     // {
     //   title: "Created Time",
@@ -407,7 +465,6 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
             <div>
               <Button
                 size="small"
-                disabled={props.update ? false : true}
                 onClick={() => {
                   editKnowledge(record);
                 }}
@@ -417,6 +474,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
             </div>
             <div>
               <Popover
+                className="delete-popover"
                 content={
                   <div>
                     <p style={{ marginBottom: "5px" }}>
@@ -433,17 +491,15 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
                         danger
                         size="small"
                         onClick={() => {
-                          if (
-                            record.id !== undefined &&
-                            record.id >= 0 &&
-                            props.delete
-                          ) {
-                            props
-                              .delete(record.id)
+                          if (record.id !== undefined && record.id >= 0) {
+                            deleteCuratedKnowledge({
+                              id: record.id,
+                            })
                               .then((response: any) => {
                                 message.success(
                                   "Delete knowledge successfully!"
                                 );
+                                reforceUpdateTable();
                               })
                               .catch((error: any) => {
                                 console.log("Delete knowledge error: ", error);
@@ -451,11 +507,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
                               });
                           } else {
                             message.error("Delete knowledge failed!");
-                            console.log(
-                              "Delete knowledge error: ",
-                              record,
-                              props.delete
-                            );
+                            console.log("Delete knowledge error: ", record);
                           }
                         }}
                       >
@@ -465,11 +517,15 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
                   </div>
                 }
                 title="Comfirm"
+                trigger="click"
               >
+                {/* If we cannot find id in the record, this means that the record is not in the database. */}
                 <Button
                   danger
                   size="small"
-                  disabled={props.delete ? false : true}
+                  disabled={
+                    record.id !== undefined && record.id >= 0 ? false : true
+                  }
                 >
                   Delete
                 </Button>
@@ -565,11 +621,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           dataIndex: "relation_type",
           title: col.title,
           editing: isEditing(record),
-          options: formatRelationTypeOptions(
-            props.relationStat,
-            record.source_type,
-            record.target_type
-          ),
+          options: formatRelationTypeOptions(props.relationStat, record),
           placeholder: "Please select relation type!",
         }),
       };
@@ -591,10 +643,81 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
     }
   });
 
-  const editKnowledge = (record: GraphEdge) => {
-    if (props.update) {
-      props.update(record);
+  const reforceUpdateTable = () => {
+    if (props.onChange) {
+      props.onChange({
+        current: props.data.page,
+        pageSize: props.data.pageSize,
+      });
     }
+  };
+
+  const editKnowledge = async (record: GraphEdge) => {
+    form
+      .validateFields()
+      .then((row) => {
+        const payload = {
+          ...record,
+          ...row,
+        };
+
+        // Properties `created_at` is read only.
+        delete payload.created_at;
+        delete record.created_at;
+
+        if (isEqual(payload, record)) {
+          message.warning("Nothing changed!");
+          return;
+        }
+
+        if (row) {
+          console.log("Edit knowledge: ", payload, row, record);
+
+          const id = payload.id;
+          // Properties `id` is read only.
+          delete payload.id;
+          if (id !== undefined && id >= 0) {
+            putCuratedKnowledge(
+              {
+                id: id,
+              },
+              payload
+            )
+              .then((response: any) => {
+                message.success("Update knowledge successfully!");
+                reforceUpdateTable();
+              })
+              .catch((error: any) => {
+                console.log("Update knowledge error: ", error);
+                message.error("Update knowledge failed!");
+              })
+              .finally(() => {
+                cancel();
+              });
+          } else {
+            postCuratedKnowledge(payload)
+              .then((response: any) => {
+                message.success("Create knowledge successfully!");
+                reforceUpdateTable();
+              })
+              .catch((error: any) => {
+                console.log("Create knowledge error: ", error);
+                message.error("Create knowledge failed!");
+              })
+              .finally(() => {
+                cancel();
+              });
+          }
+        } else {
+          console.log("Cannot edit knowledge: ", record, row);
+          message.warning(
+            "Cannot update knowledge, please fill the form first!"
+          );
+        }
+      })
+      .catch((error) => {
+        console.log("Validate error: ", error);
+      });
   };
 
   console.log("Merged Columns: ", columns, mergedColumns, props.data.data);
@@ -613,7 +736,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
             },
           }}
           scroll={{ x: 1000, y: props.height || 500 }}
-          dataSource={props.data.data || []}
+          dataSource={data}
           rowKey={(record) => genRowKey(record)}
           pagination={{
             showSizeChanger: true,
@@ -633,6 +756,13 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
               setPage(pagination.current || 1);
               setPageSize(pagination.pageSize || 10);
             }
+          }}
+          expandable={{
+            expandedRowRender: (record) => (
+              <p style={{ margin: 0 }}>{record.key_sentence}</p>
+            ),
+            rowExpandable: (record) =>
+              record.key_sentence !== "" && record.key_sentence !== null,
           }}
         ></Table>
       </Form>

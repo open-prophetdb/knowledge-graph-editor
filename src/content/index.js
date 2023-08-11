@@ -86,6 +86,7 @@ const formatData = (annotations) => {
   relations.forEach((relation) => {
     const from_id = relation.from_id;
     const to_id = relation.to_id;
+    const relation_type = relation.labels[0]; // Only one label is allowed for a relation
 
     const from = annotations.find((annotation) => {
       return annotation.id == from_id;
@@ -101,6 +102,13 @@ const formatData = (annotations) => {
     const targetType = formatLabel(targetNode.labels[0]); // Only one label is allowed for a node
     const targetName = targetNode.text.trim();
 
+    if (!relation_type) {
+      message.warning(
+        `The relation between ${sourceName} and ${targetName} does not have a type, please check the annotation.`,
+        20
+      );
+    }
+
     knowledges.push({
       source_name: sourceName,
       source_id: null,
@@ -109,7 +117,7 @@ const formatData = (annotations) => {
       target_id: null,
       target_type: targetType,
       key_sentence: null,
-      relation_type: null,
+      relation_type: relation_type,
     });
   });
 
@@ -196,6 +204,7 @@ function Content() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [editorModalVisiable, setEditorModalVisiable] = useState(false);
   const [data, setData] = useState({});
+  const [loading, setLoading] = useState(false);
   const [curator, setCurator] = useState(""); // TODO: Get the current user from the backend
   const [keySentences, setKeySentences] = useState([]);
   const [statistics, setStatistics] = useState({});
@@ -282,16 +291,21 @@ function Content() {
   };
 
   const updateTable = () => {
+    setLoading(true);
     loadData()
       .then((response) => {
         message.success(
           `Found ${response.tableData.total} knowledges and ${response.keySentences.length} key sentences, please annotate them in the knowledge graph editor.`
         );
         setEditorModalVisiable(true);
+        setLoading(false);
+        // Reset the table
+        setRefreshKey(refreshKey + 1);
       })
       .catch((error) => {
         console.log("Cannot get annotations, error message is", error);
-        message.warning(`${error}`, 30);
+        message.warning(`${error}`, 20);
+        setLoading(false);
       });
   };
 
@@ -348,6 +362,8 @@ function Content() {
               type="primary"
               onClick={updateTable}
               icon={<CloudSyncOutlined />}
+              loading={loading}
+              disabled={loading}
             >
               Update Table
             </Button>
@@ -359,6 +375,9 @@ function Content() {
           keySentences={keySentences}
           entityStat={statistics.entity_stat}
           relationStat={statistics.relation_stat}
+          onChange={(pagination) => {
+            setRefreshKey(refreshKey + 1);
+          }}
         />
       </Modal>
     </Row>

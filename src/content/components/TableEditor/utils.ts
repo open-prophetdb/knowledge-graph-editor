@@ -2,6 +2,8 @@ import { sortBy } from 'lodash';
 import v from 'voca';
 // @ts-ignore
 import { fetchEntities as getEntities } from "@/api/swagger/KnowledgeGraph";
+import { Knowledge } from 'biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t';
+import { GraphEdge } from 'biominer-components/dist/esm/components/typings';
 
 export type QueryItem = {
     operator: string;
@@ -193,8 +195,10 @@ export const formatEntityTypeOptions = (items: EntityStat[]) => {
     }
 };
 
-export const formatRelationTypeOptions = (items: RelationStat[], sourceType: string, targetType: string) => {
-    if (!items || sourceType == '' || targetType == '') {
+export const formatRelationTypeOptions = (items: RelationStat[], record: Knowledge) => {
+    const sourceType = record.source_type;
+    const targetType = record.target_type;
+    if (!items || !sourceType || !targetType) {
         return ([{
             order: 0,
             label: "Unknown",
@@ -227,7 +231,7 @@ export const formatRelationTypeOptions = (items: RelationStat[], sourceType: str
         return v.titleCase(`${r}`) + ` [${item.source}]`;
     };
 
-    const relationOptions = sortBy(
+    let relationOptions = sortBy(
         relationshipTypes.map((item: RelationType) => {
             return {
                 order: 0,
@@ -238,7 +242,22 @@ export const formatRelationTypeOptions = (items: RelationStat[], sourceType: str
         ['label'],
     );
 
-    return (relationOptions);
+    console.log("formatRelationTypeOptions: ", relationOptions, record);
+    if (relationOptions.length == 0) {
+        relationOptions = [{
+            order: 0,
+            label: "Unknown",
+            value: "Unknown",
+        }, {
+            order: 1,
+            label: record.relation_type,
+            value: record.relation_type,
+        }];
+    }
+
+    return relationOptions.filter((item: OptionType) => {
+        return item.value && item.label
+    });
 };
 
 export const formatLabelOption = (item: Entity): string => {
@@ -298,6 +317,35 @@ export const formatEntityIdOptions = (entities: Entity[] | undefined): Options =
 
     return options;
 };
+
+export function makeQueryKnowledgeStr(params: Partial<Knowledge>): string {
+    let query: ComposeQueryItem = {} as ComposeQueryItem;
+
+    let id_query_item = {} as QueryItem;
+    let curator_query_item = {} as QueryItem;
+    if (params.pmid && params.curator) {
+        id_query_item = {
+            operator: '=',
+            field: 'pmid',
+            value: params.pmid,
+        };
+
+        curator_query_item = {
+            operator: '=',
+            field: 'curator',
+            value: params.curator,
+        };
+
+        query = {
+            operator: 'and',
+            items: [id_query_item, curator_query_item],
+        };
+
+        return JSON.stringify(query);
+    } else {
+        return "";
+    }
+}
 
 export function makeQueryEntityStr(params: Partial<Entity>): string {
     let query: ComposeQueryItem = {} as ComposeQueryItem;
