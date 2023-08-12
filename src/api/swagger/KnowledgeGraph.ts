@@ -1,16 +1,69 @@
+// eslint-disable-next-line no-undef
+/*global chrome*/
+
 // @ts-ignore
 /* eslint-disable */
 import request from 'umi-request';
 
-request.extendOptions({
-  // prefix: 'https://drugs.3steps.cn',
-  // headers: {
-  //   'Content-Type': 'application/json',
-  //   'Authorization': 'Basic bWVjZnMtbm06bm1AbWdo'
-  // },
-  prefix: 'http://localhost:8000',
-  timeout: 1000 * 60 * 60,
-});
+export const prefix = 'https://drugs.3steps.cn';
+
+export const setToken = (token: string) => {
+  return new Promise((resolve, reject) => {
+    // @ts-ignore
+    chrome.storage.local.set({ AUTH_TOKEN: token }).then(() => {
+      console.log("AUTH_TOKEN is set");
+      resolve("AUTH_TOKEN is set");
+    }).catch((err: any) => {
+      console.log("AUTH_TOKEN is not set");
+      reject(err);
+    });
+  });
+}
+
+export const getToken = () => {
+  return new Promise((resolve, reject) => {
+    // @ts-ignore
+    chrome.storage.local.get(["AUTH_TOKEN"], (result: any) => {
+      // @ts-ignore
+      console.log('result:', result, chrome.storage.local);
+      if (result.AUTH_TOKEN) {
+        resolve(result.AUTH_TOKEN);
+      } else {
+        reject('no token');
+      }
+    });
+  });
+}
+
+export const initRequest = (token?: string) => {
+  // When use initRequest in the popup page, we don't need to set the token. Because the token can be got from local storage directly. But when use initRequest in the content script, we need to set the token manually, because the content script can't get the token from the local storage of a chrome extension.
+  const auth_token = token || localStorage.getItem('AUTH_TOKEN');
+
+  if (auth_token) {
+    // Save the token to the local storage of current page. It may be a chrome extension page or a normal web page.
+    window.localStorage.setItem('AUTH_TOKEN', auth_token);
+  }
+
+  let headers: any = {
+    'Content-Type': 'application/json',
+  }
+
+  if (auth_token) {
+    headers = {
+      ...headers,
+      'Authorization': auth_token,
+    }
+  }
+
+  // console.log('AUTH_TOKEN:', auth_token);
+
+  request.extendOptions({
+    prefix: prefix,
+    headers: headers,
+    // prefix: 'http://localhost:8000',
+    timeout: 1000 * 60 * 60,
+  });
+}
 
 /** Call `/api/v1/auto-connect-nodes` with query params to fetch edges which connect the input nodes. GET /api/v1/auto-connect-nodes */
 export async function fetchEdgesAutoConnectNodes(

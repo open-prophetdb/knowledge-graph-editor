@@ -30,7 +30,7 @@ const createEnvironmentHash = require('./webpack/persistentCache/createEnvironme
 
 // Source maps are resource heavy and can cause out of memory issue for large source files.
 // const shouldUseSourceMap = process.env.GENERATE_SOURCEMAP !== 'false';
-const shouldUseSourceMap = true
+const shouldUseSourceMap = false
 
 const reactRefreshRuntimeEntry = require.resolve('react-refresh/runtime');
 const reactRefreshWebpackPluginRuntimeEntry = require.resolve(
@@ -208,7 +208,7 @@ module.exports = function (webpackEnv) {
       main: isEnvDevelopment && !shouldUseReactRefresh
           ? [webpackDevClientEntry,paths.appIndexJs] : paths.appIndexJs,
       content: './src/content/index.js',
-      background: './src/background/index.js'
+      // background: './src/background/index.js'
     },
     output: {
       // The build folder.

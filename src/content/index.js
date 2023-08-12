@@ -6,7 +6,11 @@ import { CloudSyncOutlined, RestOutlined } from "@ant-design/icons";
 import ReactDOM from "react-dom";
 import TableEditor from "./components/TableEditor";
 import { exampleData } from "./components/TableEditor";
-import { fetchStatistics } from "@/api/swagger/KnowledgeGraph";
+import {
+  fetchStatistics,
+  initRequest,
+  getToken,
+} from "@/api/swagger/KnowledgeGraph";
 import ButtonGroup from "antd/es/button/button-group";
 
 import Icon from "./images/icon.png";
@@ -144,9 +148,9 @@ const getUser = () => {
 
 const getAnnotations = () => {
   // More details about getting the current url, please access https://stackoverflow.com/a/59434377
-  // const url = window.location.href;
-  const url =
-    "https://prophet-studio.3steps.cn/projects/14/data?tab=38&task=17696";
+  const url = window.location.href;
+  // const url =
+  // "https://prophet-studio.3steps.cn/projects/14/data?tab=38&task=17696";
   // Parse the url to get all the parameters
   let params = new URL(url).searchParams;
   console.log("params", url, params);
@@ -275,7 +279,7 @@ function Content() {
       .catch((error) => {
         console.log(error);
         message.error(
-          "Failed to get statistics, please check the network connection."
+          "Failed to get metadata for the knowledge-graph-editor extension, please check your network connection or login status."
         );
         setStatistics({});
       });
@@ -384,7 +388,15 @@ function Content() {
   );
 }
 
-const app = document.createElement("div");
-app.id = "knowledge-graph-editor";
-document.body.appendChild(app);
-ReactDOM.render(<Content />, app);
+const url = window.location.href;
+
+if (url.startsWith("https://prophet-studio.3steps.cn")) {
+  getToken().then((token) => {
+    // Initalize the request configuration, load the authentication token from the local storage.
+    initRequest(token);
+    const app = document.createElement("div");
+    app.id = "knowledge-graph-editor";
+    document.body.appendChild(app);
+    ReactDOM.render(<Content />, app);
+  });
+}

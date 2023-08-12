@@ -1,5 +1,6 @@
 import { HashRouter, Route, Routes, Navigate } from "react-router-dom";
 import Editor from "./Editor";
+import Login from "./Login";
 
 import "./index.less";
 
@@ -10,7 +11,8 @@ const Popup: React.FC = () => {
     <HashRouter>
       <Routes>
         <Route path="/editor" element={<Editor />} />
-        <Route path="*" element={<Navigate to="/editor" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </HashRouter>
   );

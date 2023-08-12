@@ -119,7 +119,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
     options || []
   );
 
-  // console.log("EditableCell: ", options, selectOptions, loading, onSearch);
+  console.log("EditableCell: ", options, selectOptions, loading, onSearch, record);
 
   // Only for selecting entity id
   const mergeOptions = (
@@ -167,12 +167,6 @@ const EditableCell: React.FC<EditableCellProps> = ({
     return [];
   };
 
-  useEffect(() => {
-    if (entityType) {
-      mergeOptions(loadOptions(), options || []);
-    }
-  }, []);
-
   const inputNode =
     inputType === "text" ? (
       <TextArea rows={8} placeholder="Please input key sentence!" />
@@ -200,6 +194,8 @@ const EditableCell: React.FC<EditableCellProps> = ({
         onFocus={() => {
           if (entityType) {
             mergeOptions(loadOptions(), options || []);
+          } else {
+            setSelectOptions(options || []);
           }
         }}
         onSelect={(value, option) => {

@@ -3,9 +3,6 @@
   "version": "1.0",
   "description": "An extension to curate findings from the web and publications into a knowledge graph",
   "manifest_version": 3,
-  "background": {
-    "service_worker": "static/js/background.js"
-  },
   "content_scripts": [
     {
       "matches": [

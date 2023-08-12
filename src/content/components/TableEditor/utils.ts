@@ -181,6 +181,8 @@ export const formatEntityTypeOptions = (items: EntityStat[]) => {
             return item.entity_type;
         }),
     );
+
+    console.log("formatEntityTypeOptions: ", items, nodeTypes);
     if (nodeTypes) {
         nodeTypes.forEach((element: string) => {
             o.push({

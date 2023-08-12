@@ -8,6 +8,7 @@ import type {
 } from "biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t";
 import { TableOutlined, BulbOutlined } from "@ant-design/icons";
 import {
+  initRequest,
   fetchCuratedKnowledges as getKnowledges,
   fetchStatistics as getStatistics,
   fetchEntities as getEntities,
@@ -21,6 +22,8 @@ import "./index.less";
 type KnowledgeGraphEditorProps = {};
 
 const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
+  // Initalize the request configuration, load the authentication token from the local storage.
+  initRequest();
   const [refreshKey, setRefreshKey] = React.useState<number>(0);
   const [formData, setFormData] = React.useState<GraphEdge>({} as GraphEdge);
 
