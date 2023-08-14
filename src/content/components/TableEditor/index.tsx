@@ -40,10 +40,11 @@ import {
   formatKeySentenceOptions,
   formatRelationTypeOptions,
   makeQueryKnowledgeStr,
+  formatEntityIdOptions,
 } from "./utils";
 
 import "./index.less";
-import { uniq, uniqBy, isEqual } from "lodash";
+import { uniq, uniqBy, isEqual, sortBy } from "lodash";
 import { fetchCuratedKnowledges } from "../../../api/swagger/KnowledgeGraph";
 
 const TextArea = Input.TextArea;
@@ -86,7 +87,7 @@ interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
   index: number;
   children: React.ReactNode;
   placeholder?: string;
-  options?: any[];
+  options?: GroupOptions;
   onSearch?: (
     entityType: string,
     value: string,
@@ -115,43 +116,122 @@ const EditableCell: React.FC<EditableCellProps> = ({
   ...restProps
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectOptions, setSelectOptions] = useState<Options | GroupOptions>(
+  const [selectOptions, setSelectOptions] = useState<GroupOptions>(
     options || []
   );
 
-  console.log("EditableCell: ", options, selectOptions, loading, onSearch, record);
+  // console.log(
+  //   "EditableCell: ",
+  //   options,
+  //   selectOptions,
+  //   loading,
+  //   onSearch,
+  //   record
+  // );
+
+  const isGroupOptions = (
+    options: Options | GroupOptions | undefined
+  ): boolean => {
+    if (!options) {
+      return false;
+    }
+
+    return options.length > 0 && options[0].hasOwnProperty("options");
+  };
+
+  const mergeGroupOptions = (groupOptions: GroupOptions): GroupOptions => {
+    const labels = groupOptions.map((groupOption) => groupOption.label);
+    const uniqLabels = uniq(labels);
+    const mergedOptions: GroupOptions = [];
+    uniqLabels.forEach((label) => {
+      const mergedOption: GroupOptionType = {
+        label: label,
+        options: [],
+      };
+      groupOptions.forEach((groupOption) => {
+        if (groupOption.label === label) {
+          mergedOption.options = mergedOption.options.concat(
+            groupOption.options
+          );
+        }
+      });
+      mergedOptions.push(mergedOption);
+    });
+
+    return mergedOptions;
+  };
+
+  const uniqGroupOptions = (groupOptions: GroupOptions): GroupOptions => {
+    const uniqOptions: GroupOptions = [];
+    groupOptions.forEach((groupOption) => {
+      const uniqOption: GroupOptionType = {
+        label: groupOption.label,
+        options: [],
+      };
+      uniqOption.options = uniqBy(groupOption.options, "value");
+      uniqOptions.push(uniqOption);
+    });
+
+    return uniqOptions;
+  };
+
+  const sortByLabel = (options: GroupOptions): GroupOptions => {
+    return sortBy(options, "label");
+  };
+
+  const removeItemsFromOptions = (
+    options: Options,
+    items: Options
+  ): Options => {
+    if (items.length === 0) {
+      return options;
+    }
+
+    if (options.length === 0) {
+      return [];
+    }
+
+    const itemValues = items.map((item) => item.value);
+    return options.filter((option) => !itemValues.includes(option.value));
+  };
 
   // Only for selecting entity id
   const mergeOptions = (
     historyOptions: OptionType[],
-    newOptions: OptionType[]
+    newOptions: GroupOptions
   ) => {
+    // Common - History - Search Results
     const mergedOptions = [
       {
         label: "History",
         options: historyOptions,
       },
+      ...newOptions,
+      ...selectOptions,
       {
         label: "Search Results",
-        options: newOptions,
+        options: [],
+      },
+      {
+        label: "Common",
+        options: [],
       },
     ];
 
-    const index = selectOptions.findIndex(
-      (option) => option.label === "Search Results"
+    let options = sortByLabel(
+      uniqGroupOptions(mergeGroupOptions(mergedOptions))
+    );
+    // Remote all items in history from search results, otherwise it will cause disordered options
+    let newSearchOptions = removeItemsFromOptions(
+      options[2].options,
+      options[1].options
     );
 
-    if (index >= 0) {
-      const searchOptions = selectOptions[index] as GroupOptionType;
-      if (searchOptions && searchOptions.options) {
-        mergedOptions[1].options = uniqBy(
-          [...searchOptions.options, ...newOptions],
-          "value"
-        );
-      }
+    if (options[2].options) {
+      options[2].options = newSearchOptions;
     }
 
-    setSelectOptions(mergedOptions);
+    setSelectOptions(options);
   };
 
   const loadOptions = () => {
@@ -184,10 +264,15 @@ const EditableCell: React.FC<EditableCellProps> = ({
           if (onSearch && entityType && value) {
             setSelectOptions(options || []);
             setLoading(true);
-            onSearch(entityType, value, (data: any) => {
+            onSearch(entityType, value, (data: Options) => {
               setLoading(false);
 
-              mergeOptions(loadOptions(), data);
+              mergeOptions(loadOptions(), [
+                {
+                  label: "Search Results",
+                  options: data,
+                },
+              ]);
             });
           }
         }}
@@ -195,11 +280,21 @@ const EditableCell: React.FC<EditableCellProps> = ({
           if (entityType) {
             mergeOptions(loadOptions(), options || []);
           } else {
-            setSelectOptions(options || []);
+            if (isGroupOptions(options)) {
+              // Don't worry about this warning, the options is always GroupOptions
+              // @ts-ignore
+              setSelectOptions(uniqGroupOptions(options) || []);
+            } else {
+              setSelectOptions(uniqBy(options, "value") || []);
+            }
           }
         }}
         onSelect={(value, option) => {
-          if (updateCachedDataItem && entityType) {
+          if (
+            updateCachedDataItem &&
+            entityType &&
+            option.label !== "Unknown"
+          ) {
             // Keep the selected entity in cache for future use
             updateCachedDataItem("entityOptions", {
               label: option.label,
@@ -242,7 +337,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
   const [cachedData, setCachedData] = useState<CachedData>({});
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [entityTypeOptions, setEntityTypeOptions] = useState<Options>([]);
+  const [entityTypeOptions, setEntityTypeOptions] = useState<GroupOptions>([]);
 
   useEffect(() => {
     const cachedData = loadCachedData();
@@ -352,7 +447,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       key: "source_name",
       align: "left",
       fixed: "left",
-      width: 200,
+      width: 150,
     },
     {
       title: "Source Type",
@@ -360,23 +455,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       align: "center",
       key: "source_type",
       fixed: "left",
-      width: 120,
-    },
-    {
-      title: "Target Name",
-      dataIndex: "target_name",
-      align: "center",
-      key: "target_name",
-      // fixed: "left",
-      width: 200,
-    },
-    {
-      title: "Target Type",
-      dataIndex: "target_type",
-      align: "center",
-      key: "target_type",
-      // fixed: "left",
-      width: 100,
+      width: 150,
     },
     {
       title: "Source ID",
@@ -384,6 +463,22 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       align: "center",
       key: "source_id",
       width: 180,
+    },
+    {
+      title: "Target Name",
+      dataIndex: "target_name",
+      align: "center",
+      key: "target_name",
+      // fixed: "left",
+      width: 150,
+    },
+    {
+      title: "Target Type",
+      dataIndex: "target_type",
+      align: "center",
+      key: "target_type",
+      // fixed: "left",
+      width: 150,
     },
     {
       title: "Target ID",
@@ -535,42 +630,48 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
 
   const mergedColumns = columns.map((col) => {
     if (
-      ["actions", "pmid", "created_at", "source_name", "target_name"].includes(
-        col.key as string
-      )
+      [
+        "actions",
+        "pmid",
+        "created_at",
+        "source_name",
+        "target_name",
+        "source_type",
+        "target_type",
+      ].includes(col.key as string)
     ) {
       return col;
     }
 
-    if (col.key === "source_type") {
-      return {
-        ...col,
-        onCell: (record: GraphEdge) => ({
-          record,
-          inputType: "select",
-          dataIndex: "source_type",
-          title: col.title,
-          editing: isEditing(record),
-          options: entityTypeOptions,
-          placeholder: "Please select source type!",
-        }),
-      };
-    }
+    // if (col.key === "source_type") {
+    //   return {
+    //     ...col,
+    //     onCell: (record: GraphEdge) => ({
+    //       record,
+    //       inputType: "select",
+    //       dataIndex: "source_type",
+    //       title: col.title,
+    //       editing: isEditing(record),
+    //       options: entityTypeOptions,
+    //       placeholder: "Please select source type!",
+    //     }),
+    //   };
+    // }
 
-    if (col.key === "target_type") {
-      return {
-        ...col,
-        onCell: (record: GraphEdge) => ({
-          record,
-          inputType: "select",
-          dataIndex: "target_type",
-          title: col.title,
-          editing: isEditing(record),
-          options: entityTypeOptions,
-          placeholder: "Please select target type!",
-        }),
-      };
-    }
+    // if (col.key === "target_type") {
+    //   return {
+    //     ...col,
+    //     onCell: (record: GraphEdge) => ({
+    //       record,
+    //       inputType: "select",
+    //       dataIndex: "target_type",
+    //       title: col.title,
+    //       editing: isEditing(record),
+    //       options: entityTypeOptions,
+    //       placeholder: "Please select target type!",
+    //     }),
+    //   };
+    // }
 
     if (col.key === "source_id") {
       return {
@@ -581,7 +682,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           dataIndex: "source_id",
           title: col.title,
           editing: isEditing(record),
-          options: [],
+          options: formatEntityIdOptions([]),
           placeholder: "Please select source id!",
           onSearch: fetchEntities,
           entityType: record.source_type,
@@ -599,7 +700,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           dataIndex: "target_id",
           title: col.title,
           editing: isEditing(record),
-          options: [],
+          options: formatEntityIdOptions([]),
           placeholder: "Please select target id!",
           onSearch: fetchEntities,
           entityType: record.target_type,
@@ -716,7 +817,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       });
   };
 
-  console.log("Merged Columns: ", columns, mergedColumns, props.data.data);
+  // console.log("Merged Columns: ", columns, mergedColumns, props.data.data);
 
   return (
     <Row className="graph-table-container">

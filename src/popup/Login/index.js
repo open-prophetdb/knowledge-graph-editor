@@ -28,6 +28,11 @@ function Login() {
   }
 
   const checkAuth = () => {
+    if (prefix.startsWith("http://localhost")) {
+      navigate("/editor");
+      return;
+    }
+
     let AUTH_TOKEN = window.localStorage.getItem("AUTH_TOKEN");
     if (AUTH_TOKEN) {
       setLoading(true);

@@ -18,7 +18,7 @@ import Icon from "./images/icon.png";
 import "./index.less";
 
 const formatLabel = (label) => {
-  const lowerc_label = label.toLowerCase().trim().replace(/-_/g, "");
+  const lowerc_label = label.toLowerCase().trim().replace(/[-_]/g, "");
   const labelMap = {
     gene: "Gene",
     disease: "Disease",
@@ -213,55 +213,12 @@ function Content() {
   const [keySentences, setKeySentences] = useState([]);
   const [statistics, setStatistics] = useState({});
 
-  const loadData = () => {
+  const getCurrentUser = () => {
     return new Promise((resolve, reject) => {
       getUser()
         .then((response) => {
-          const curator = response.email;
-          setCurator(curator);
-          getAnnotations()
-            .then((response) => {
-              const annotations = response.annotations;
-              const filteredAnnotations = filterAnnotations(
-                annotations,
-                curator
-              );
-              console.log("filteredAnnotations", filteredAnnotations);
-              const formattedData = formatData(filteredAnnotations);
-              const pmid = response.data.pmid;
-
-              const knowledges = formattedData.knowledges.map((knowledge) => {
-                return {
-                  ...knowledge,
-                  pmid: pmid,
-                  curator: curator,
-                  // Convert time to a string
-                  created_at: new Date().toISOString(),
-                  key_sentence: null,
-                };
-              });
-
-              const tableData = {
-                total: knowledges.length,
-                page: 1,
-                pageSize: knowledges.length,
-                data: knowledges,
-              };
-              setData(tableData);
-
-              setKeySentences(formattedData.keySentences);
-
-              console.log("formattedData", formattedData);
-              console.log("knowledges", knowledges);
-              console.log("keySentences", formattedData.keySentences);
-              resolve({
-                tableData: tableData,
-                keySentences: formattedData.keySentences,
-              });
-            })
-            .catch((error) => {
-              reject(error);
-            });
+          const current_curator = response.email;
+          setCurator(current_curator);
         })
         .catch((error) => {
           reject(error);
@@ -270,7 +227,7 @@ function Content() {
   };
 
   useEffect(() => {
-    loadData();
+    getCurrentUser();
     fetchStatistics()
       .then((response) => {
         console.log("statistics", response);
@@ -294,6 +251,55 @@ function Content() {
     setEditorModalVisiable(false);
   };
 
+  const loadData = () => {
+    if (!curator) {
+      message.error(
+        "Failed to get the current user, please refresh your page or login status."
+      );
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      getAnnotations()
+        .then((response) => {
+          const annotations = response.annotations;
+          const filteredAnnotations = filterAnnotations(annotations, curator);
+          console.log("filteredAnnotations", filteredAnnotations);
+          const formattedData = formatData(filteredAnnotations);
+          const pmid = response.data.pmid;
+
+          const knowledges = formattedData.knowledges.map((knowledge) => {
+            return {
+              ...knowledge,
+              pmid: pmid,
+              curator: curator,
+              // Convert time to a string
+              created_at: new Date().toISOString(),
+              key_sentence: null,
+            };
+          });
+
+          const tableData = {
+            total: knowledges.length,
+            page: 1,
+            pageSize: knowledges.length,
+            data: knowledges,
+          };
+
+          console.log("formattedData", formattedData);
+          console.log("knowledges", knowledges);
+          console.log("keySentences", formattedData.keySentences);
+          resolve({
+            tableData: tableData,
+            keySentences: formattedData.keySentences,
+          });
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  };
+
   const updateTable = () => {
     setLoading(true);
     loadData()
@@ -301,6 +307,9 @@ function Content() {
         message.success(
           `Found ${response.tableData.total} knowledges and ${response.keySentences.length} key sentences, please annotate them in the knowledge graph editor.`
         );
+
+        setData(response.tableData);
+        setKeySentences(response.keySentences);
         setEditorModalVisiable(true);
         setLoading(false);
         // Reset the table
@@ -323,22 +332,43 @@ function Content() {
     <Row className="knowledge-editor-fixed-content">
       <div
         className="knowledge-editor-fixed-button"
+        style={{ display: loading ? "none" : "block" }}
         onClick={() => {
-          if (!data.total && !keySentences.length) {
-            const error = `No annotations found for the current user (${curator}) yet, please annotate them first.`;
-            message.warning(`${error}`, 20);
-          } else if (data.total === 0 || !data.total) {
-            message.error("No knowledge found, please annotate them first.");
-            return;
-          } else if (keySentences.length === 0) {
-            message.error("No key sentence found, please annotate them first.");
-            return;
-          } else {
-            message.success(
-              `Found ${data.total} knowledges and ${keySentences.length} key sentences, please annotate them in the knowledge graph editor.`
-            );
-            setEditorModalVisiable(true);
-          }
+          setLoading(true);
+          loadData()
+            .then((response) => {
+              setData(response.tableData);
+              setKeySentences(response.keySentences);
+
+              if (!response.tableData.total && !response.keySentences.length) {
+                const error = `No annotations found for the current user (${curator}) yet, please annotate them first.`;
+                message.warning(`${error}`, 20);
+              } else if (response.tableData.total === 0 || !response.tableData.total) {
+                message.error(
+                  "No knowledge found, please annotate them first."
+                );
+                return;
+              } else if (response.keySentences.length === 0) {
+                message.error(
+                  "No key sentence found, please annotate them first."
+                );
+                return;
+              } else {
+                message.success(
+                  `Found ${response.tableData.total} knowledges and ${response.keySentences.length} key sentences, please annotate them in the knowledge graph editor.`
+                );
+                setEditorModalVisiable(true);
+              }
+              setLoading(false);
+            })
+            .catch((error) => {
+              console.log("Cannot get annotations, error message is", error);
+              message.warning(`${error}`, 10);
+              setLoading(false);
+            })
+            .finally(() => {
+              setLoading(false);
+            });
         }}
       >
         <img src={Icon} width={"100%"} height={"100%"} />

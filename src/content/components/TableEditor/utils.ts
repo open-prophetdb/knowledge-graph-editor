@@ -3,7 +3,14 @@ import v from 'voca';
 // @ts-ignore
 import { fetchEntities as getEntities } from "@/api/swagger/KnowledgeGraph";
 import { Knowledge } from 'biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t';
-import { GraphEdge } from 'biominer-components/dist/esm/components/typings';
+
+export const commonOptions = [
+    {
+        order: 0,
+        label: "Unknown",
+        value: "Unknown",
+    }
+]
 
 export type QueryItem = {
     operator: string;
@@ -174,7 +181,7 @@ export const RelationTypeDict: Record<string, string> = {
 
 export type RelationType = { source: string; relationType: string; fullRelationType: string };
 
-export const formatEntityTypeOptions = (items: EntityStat[]) => {
+export const formatEntityTypeOptions = (items: EntityStat[]): GroupOptions => {
     let o: OptionType[] = [];
     let nodeTypes = new Set(
         items.map((item: EntityStat) => {
@@ -191,21 +198,37 @@ export const formatEntityTypeOptions = (items: EntityStat[]) => {
                 value: element,
             });
         });
-        return (sortBy(o, 'label'));
+        o = sortBy(o, 'label');
     } else {
-        return ([]);
+        o = [];
+    }
+
+    if (o.length > 0) {
+        return [
+            {
+                label: 'Common',
+                options: commonOptions,
+            },
+            {
+                label: 'Search Results',
+                options: o,
+            },
+        ];
+    } else {
+        return [
+            {
+                label: 'Common',
+                options: commonOptions,
+            },
+        ];
     }
 };
 
-export const formatRelationTypeOptions = (items: RelationStat[], record: Knowledge) => {
+export const formatRelationTypeOptions = (items: RelationStat[], record: Knowledge): Options => {
     const sourceType = record.source_type;
     const targetType = record.target_type;
     if (!items || !sourceType || !targetType) {
-        return ([{
-            order: 0,
-            label: "Unknown",
-            value: "Unknown",
-        }]);
+        return commonOptions;
     };
 
     const filtered = items.filter((item: RelationStat) => {
@@ -245,21 +268,27 @@ export const formatRelationTypeOptions = (items: RelationStat[], record: Knowled
     );
 
     console.log("formatRelationTypeOptions: ", relationOptions, record);
-    if (relationOptions.length == 0) {
-        relationOptions = [{
-            order: 0,
-            label: "Unknown",
-            value: "Unknown",
-        }, {
-            order: 1,
-            label: record.relation_type,
-            value: record.relation_type,
-        }];
-    }
-
-    return relationOptions.filter((item: OptionType) => {
+    relationOptions.filter((item: OptionType) => {
         return item.value && item.label
     });
+
+    let mergedCommonOptions = commonOptions;
+
+    if (record.relation_type) {
+        mergedCommonOptions = [
+            ...commonOptions,
+            {
+                order: 1,
+                label: record.relation_type,
+                value: record.relation_type,
+            },
+        ]
+    }
+
+    return [
+        ...mergedCommonOptions,
+        ...relationOptions
+    ]
 };
 
 export const formatLabelOption = (item: Entity): string => {
@@ -289,17 +318,9 @@ export const formatKeySentenceOptions = (
     }
 };
 
-export const formatEntityIdOptions = (entities: Entity[] | undefined): Options => {
+export const formatEntityIdOptions = (entities: Entity[] | undefined): GroupOptions => {
     let options: Options = [];
-    if (!entities) {
-        options = [
-            {
-                order: 0,
-                label: "Unknown",
-                value: "Unknown",
-            },
-        ];
-    } else {
+    if (entities && entities.length >= 1) {
         const formatedData = entities.map((item: Entity) => ({
             value: `${item["id"]}`,
             text: formatLabelOption(item),
@@ -309,15 +330,36 @@ export const formatEntityIdOptions = (entities: Entity[] | undefined): Options =
         options = formatedData.map((d: any) => {
             return { label: d.text, value: d.value, order: 0 };
         });
-
-        options.push({
-            order: 0,
-            label: "Unknown",
-            value: "Unknown",
-        });
     }
 
-    return options;
+    const entityIdCommonOptions = [
+        // For keeping the compatibility with the id format
+        {
+            order: 0,
+            label: "Unknown",
+            value: "Unknown:Unknown",
+        }
+    ];
+
+    if (options.length > 0) {
+        return [
+            {
+                label: "Common",
+                options: entityIdCommonOptions,
+            },
+            {
+                label: "Search Results",
+                options: options,
+            }
+        ]
+    } else {
+        return [
+            {
+                label: "Common",
+                options: entityIdCommonOptions
+            }
+        ]
+    }
 };
 
 export function makeQueryKnowledgeStr(params: Partial<Knowledge>): string {
@@ -415,7 +457,7 @@ let timeout: ReturnType<typeof setTimeout> | null;
 
 // This function is used to fetch the entities of the selected entity type.
 // All the entities will be added to the options as a dropdown list.
-export const fetchEntities = async (entityType: string, value: string, callback: (any: any) => void) => {
+export const fetchEntities = async (entityType: string, value: string, callback: (options: Options) => void) => {
     if (timeout) {
         clearTimeout(timeout);
         timeout = null;

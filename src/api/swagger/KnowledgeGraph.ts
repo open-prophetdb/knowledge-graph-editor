@@ -5,7 +5,8 @@
 /* eslint-disable */
 import request from 'umi-request';
 
-export const prefix = 'https://drugs.3steps.cn';
+export const prefix = 'https://prophetdb.3steps.cn';
+// export const prefix = 'http://localhost:8000';
 
 export const setToken = (token: string) => {
   return new Promise((resolve, reject) => {
@@ -25,7 +26,7 @@ export const getToken = () => {
     // @ts-ignore
     chrome.storage.local.get(["AUTH_TOKEN"], (result: any) => {
       // @ts-ignore
-      console.log('result:', result, chrome.storage.local);
+      // console.log('result:', result, chrome.storage.local);
       if (result.AUTH_TOKEN) {
         resolve(result.AUTH_TOKEN);
       } else {
