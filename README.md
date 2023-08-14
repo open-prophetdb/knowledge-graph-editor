@@ -14,6 +14,36 @@ This extension is designed for synchronizing findings/knowledges into a [biomedg
 
 ![Fig5](./assets/5-kg-editor-popup-viewer.png)
 
+## How to install and use?
+
+1. Download the extension from [here](https://github.com/yjcyxky/knowledge-graph-editor/releases).
+
+2. Enable developer mode in Chrome.
+![Enable developer mode](./assets/manual/1-enable-developer-mode.png)
+
+3. Click "Load unpacked" button and select the extension folder.
+![Load unpacked](./assets/manual/2-click-load-unpacked-button.png)
+
+![Load the extension](./assets/manual/3-load-the-extension.png)
+
+4. Enable the extension.
+![Show Extension](./assets/manual/4-show-extension.png)
+
+5. Click the extension icon and login.
+![Login](./assets/manual/5-login.png)
+
+6. Input your account and password.
+![Input Account and Password](./assets/manual/6-input-account-password.png)
+
+7. Login success.
+![Login Success](./assets/manual/7-success.png)
+
+8. Open the `[Prophet Studio](https://prophet-studio.3steps.cn)` and click the `Annotate` button.
+![Annotate](./assets/manual/8-annotate.png)
+
+9. Edit the findings.
+![Edit Findings](./assets/manual/9-edit-findings.png)
+
 ## Available Scripts
 
 In the project directory, you can run:
