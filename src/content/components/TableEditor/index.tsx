@@ -636,42 +636,42 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
         "created_at",
         "source_name",
         "target_name",
-        "source_type",
-        "target_type",
+        // "source_type",
+        // "target_type",
       ].includes(col.key as string)
     ) {
       return col;
     }
 
-    // if (col.key === "source_type") {
-    //   return {
-    //     ...col,
-    //     onCell: (record: GraphEdge) => ({
-    //       record,
-    //       inputType: "select",
-    //       dataIndex: "source_type",
-    //       title: col.title,
-    //       editing: isEditing(record),
-    //       options: entityTypeOptions,
-    //       placeholder: "Please select source type!",
-    //     }),
-    //   };
-    // }
+    if (col.key === "source_type") {
+      return {
+        ...col,
+        onCell: (record: GraphEdge) => ({
+          record,
+          inputType: "select",
+          dataIndex: "source_type",
+          title: col.title,
+          editing: isEditing(record),
+          options: entityTypeOptions,
+          placeholder: "Please select source type!",
+        }),
+      };
+    }
 
-    // if (col.key === "target_type") {
-    //   return {
-    //     ...col,
-    //     onCell: (record: GraphEdge) => ({
-    //       record,
-    //       inputType: "select",
-    //       dataIndex: "target_type",
-    //       title: col.title,
-    //       editing: isEditing(record),
-    //       options: entityTypeOptions,
-    //       placeholder: "Please select target type!",
-    //     }),
-    //   };
-    // }
+    if (col.key === "target_type") {
+      return {
+        ...col,
+        onCell: (record: GraphEdge) => ({
+          record,
+          inputType: "select",
+          dataIndex: "target_type",
+          title: col.title,
+          editing: isEditing(record),
+          options: entityTypeOptions,
+          placeholder: "Please select target type!",
+        }),
+      };
+    }
 
     if (col.key === "source_id") {
       return {
