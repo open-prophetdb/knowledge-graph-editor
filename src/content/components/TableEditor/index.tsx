@@ -335,8 +335,8 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
   const [form] = Form.useForm();
   const [data, setData] = useState<GraphEdge[]>(props.data.data || []);
   const [cachedData, setCachedData] = useState<CachedData>({});
-  const [page, setPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(props.data.page || 1);
+  const [pageSize, setPageSize] = useState<number>(props.data.pageSize || 10);
   const [entityTypeOptions, setEntityTypeOptions] = useState<GroupOptions>([]);
 
   useEffect(() => {
@@ -393,7 +393,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
         "Cannot fetch curated knowledges, there are multiple pmids or curators!"
       );
     }
-  }, []);
+  }, [page, pageSize]);
 
   const [editingKey, setEditingKey] = useState("");
 
@@ -848,11 +848,13 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
             },
           }}
           onChange={(pagination) => {
-            if (props.onChange) {
-              props.onChange(pagination);
-              setPage(pagination.current || 1);
-              setPageSize(pagination.pageSize || 10);
-            }
+            setPage(pagination.current || 1);
+            setPageSize(pagination.pageSize || 10);
+            // if (props.onChange) {
+            //   props.onChange(pagination);
+            //   setPage(pagination.current || 1);
+            //   setPageSize(pagination.pageSize || 10);
+            // }
           }}
           expandable={{
             expandedRowRender: (record) => (
