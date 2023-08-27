@@ -20,9 +20,12 @@
   "permissions": [
     "tabs",
     "activeTab",
-    "storage"
+    "storage",
+    "cookies"
   ],
-  "host_permissions": [],
+  "host_permissions": [
+    "https://prophet-studio.3steps.cn/*"
+  ],
   "web_accessible_resources": [
     {
       "resources": [

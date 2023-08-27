@@ -1,33 +1,53 @@
+// eslint-disable-next-line no-undef
+/*global chrome*/
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, message } from "antd";
+import { Button, Input, Spin, message } from "antd";
 import imgLogo from "./logo.png";
 import "./login.less";
-import { prefix, setToken } from "@/api/swagger/KnowledgeGraph";
+import { prefix, setToken, targetWebsite } from "@/api/swagger/KnowledgeGraph";
 
 function Login() {
   // 设置路由钩子
   const navigate = useNavigate();
 
-  const [account, setAccount] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginFailed, setLoginFailed] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
-  function authenticateUser(user, password) {
-    var token = user + ":" + password;
+  function getJwtAccessToken() {
+    const cookieQuery = {
+      url: targetWebsite,
+      name: "jwt_access_token",
+    };
 
-    // Should i be encoding this value????? does it matter???
-    // Base64 Encoding -> btoa
-    var hash = btoa(token);
+    return new Promise((resolve, reject) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        const tab = tabs[0].url;
+        const url = new URL(tab);
+        console.log("Current Tab url: ", url);
 
-    return "Basic " + hash;
+        if (url.origin === targetWebsite) {
+          chrome.cookies.get(cookieQuery, function (cookie) {
+            if (cookie) {
+              console.log("cookie", cookie);
+              resolve(`Bearer ${cookie.value}`);
+            } else {
+              reject("Cannot get the token from the prophet studio!");
+            }
+          });
+        } else {
+          reject("Please open the prophet studio and login first!");
+        }
+      });
+    });
   }
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     if (prefix.startsWith("http://localhost")) {
       navigate("/editor");
       return;
@@ -45,6 +65,7 @@ function Login() {
         },
       })
         .then((res) => {
+          setLoginFailed(false);
           message.success("Login successfully!");
           window.localStorage.setItem("AUTH_TOKEN", AUTH_TOKEN);
           setToken(AUTH_TOKEN).then(() => {
@@ -53,56 +74,35 @@ function Login() {
           });
         })
         .catch((err) => {
-          message.error("Wrong account or password, please login again!");
+          console.log("checkAuth error: ", err);
+          setLoginFailed(true);
+          message.error("Cannot get the token from the prophet studio!");
           setLoading(false);
         });
     } else {
-      message.error("Wrong account or password, please login again!");
-    }
-  };
-
-  const login = () => {
-    if (account && password) {
-      const AUTH_TOKEN = authenticateUser(account, password);
-      window.localStorage.setItem("AUTH_TOKEN", AUTH_TOKEN);
-      checkAuth();
-    } else {
-      message.error("Please input account and password!");
+      getJwtAccessToken()
+        .then((jwt_access_token) => {
+          if (jwt_access_token) {
+            window.localStorage.setItem("AUTH_TOKEN", jwt_access_token);
+            checkAuth();
+          }
+        })
+        .catch((err) => {
+          setLoginFailed(true);
+          message.error(err);
+        });
     }
   };
 
   return (
     <div className="login">
       <img src={imgLogo} alt="" className="logo" />
-      <div className="ipt-con">
-        <Input
-          placeholder="Account"
-          value={account}
-          onChange={(e) => {
-            setAccount(e.target.value);
-          }}
-        />
-      </div>
-      <div className="ipt-con">
-        <Input.Password
-          placeholder="Password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-          }}
-        />
-      </div>
-      <div className="ipt-con">
-        <Button
-          type="primary"
-          block={true}
-          onClick={login}
-          loading={loading}
-          disabled={loading}
-        >
-          Login
-        </Button>
-      </div>
+      <p className="title">
+        {loginFailed &&
+          "Cannot get the token from the prophet studio, please ensure you are logged in the prophet studio and try again."}
+        {!loginFailed && "Try to login with your prophet studio account."}
+      </p>
+      <Spin spinning={loading} />
     </div>
   );
 }

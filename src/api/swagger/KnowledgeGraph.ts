@@ -6,6 +6,7 @@
 import request from 'umi-request';
 
 export const prefix = 'https://prophetdb.3steps.cn';
+export const targetWebsite = 'https://prophet-studio.3steps.cn';
 // export const prefix = 'http://localhost:8000';
 
 export const setToken = (token: string) => {
@@ -21,7 +22,7 @@ export const setToken = (token: string) => {
   });
 }
 
-export const getToken = () => {
+export const getToken = (): Promise<string> => {
   return new Promise((resolve, reject) => {
     // @ts-ignore
     chrome.storage.local.get(["AUTH_TOKEN"], (result: any) => {
@@ -34,6 +35,29 @@ export const getToken = () => {
       }
     });
   });
+}
+
+export const getCurrentUser = () => {
+  return new Promise((resolve, reject) => {
+    getToken().then((token: string) => {
+      console.log("Token: ", token);
+      let payload = token.split(".")[1];
+      let decodedPayload = decodeURIComponent(
+        atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+          .split("")
+          .map(function (c) {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+          })
+          .join("")
+      );
+      let curator = JSON.parse(decodedPayload).username;
+      console.log("Curator: ", curator);
+      resolve(curator);
+    }).catch((error: any) => {
+      console.log("Get token error: ", error);
+      reject(error);
+    })
+  })
 }
 
 export const initRequest = (token?: string) => {

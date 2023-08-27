@@ -1,12 +1,15 @@
-import React from "react";
+// eslint-disable-next-line no-undef
+/*global chrome*/
+
+import React, { useEffect } from "react";
 import GraphForm from "biominer-components/dist/esm/components/KnowledgeGraphEditor/GraphForm";
 import GraphTable from "biominer-components/dist/esm/components/KnowledgeGraphEditor/GraphTable";
-import { Row, Col, Tabs, Empty } from "antd";
+import { Row, Col, Tabs, Empty, Button } from "antd";
 import type {
   GraphEdge,
   GraphTableData,
 } from "biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t";
-import { TableOutlined, BulbOutlined } from "@ant-design/icons";
+import { TableOutlined, BulbOutlined, ForkOutlined } from "@ant-design/icons";
 import {
   initRequest,
   fetchCuratedKnowledges as getKnowledges,
@@ -15,6 +18,7 @@ import {
   postCuratedKnowledge as postKnowledge,
   putCuratedKnowledge as putKnowledgeById,
   deleteCuratedKnowledge as deleteKnowledgeById,
+  getCurrentUser,
   // @ts-ignore
 } from "@/api/swagger/KnowledgeGraph";
 import "./index.less";
@@ -25,7 +29,18 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
   // Initalize the request configuration, load the authentication token from the local storage.
   initRequest();
   const [refreshKey, setRefreshKey] = React.useState<number>(0);
+  const [curator, setCurator] = React.useState<string>(""); // TODO: get the curator from the jwt token
   const [formData, setFormData] = React.useState<GraphEdge>({} as GraphEdge);
+
+  useEffect(() => {
+    getCurrentUser().then((username: any) => {
+      console.log("Get current user: ", username);
+      setCurator(username);
+    }).catch((error: any) => {
+      console.log("Get current user error: ", error);
+      setCurator("");
+    })
+  },  []);
 
   const onSubmitKnowledge = (data: GraphEdge): Promise<GraphEdge> => {
     console.log("Submit knowledge: ", data);
@@ -91,37 +106,6 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
     setFormData(record);
   };
 
-  const tableItems = [
-    {
-      key: "table-viewer",
-      label: (
-        <span>
-          <TableOutlined />
-          Table Viewer
-        </span>
-      ),
-      children: (
-        <GraphTable
-          key={"refreshKey"}
-          getTableData={getKnowledgesData}
-          editKnowledge={editKnowledge}
-          deleteKnowledgeById={deleteKnowledgeById}
-        />
-      ),
-    },
-    {
-      key: "graph-viewer",
-      label: (
-        <span>
-          <BulbOutlined />
-          Graph Viewer
-        </span>
-      ),
-      children: <Empty />,
-      disabled: true,
-    },
-  ];
-
   const items = [
     {
       key: "graph-editor",
@@ -140,25 +124,38 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
           }}
           getEntities={getEntities}
           getStatistics={getStatistics}
+          curator={curator}
         />
       ),
     },
     {
-      key: "graph-table",
+      key: "table-viewer",
       label: (
         <span>
           <BulbOutlined />
-          Graph Viewer
+          Table Viewer
         </span>
       ),
       children: (
-        <Tabs
-          className="knowledge-graph-table"
-          size="small"
-          defaultActiveKey="table-viewer"
-          items={tableItems}
+        <GraphTable
+          yScroll={'calc(100vh - 160px)'}
+          key={refreshKey}
+          getTableData={getKnowledgesData}
+          editKnowledge={editKnowledge}
+          deleteKnowledgeById={deleteKnowledgeById}
         />
       ),
+    },
+    {
+      key: "graph-viewer",
+      label: (
+        <span>
+          <ForkOutlined />
+          Graph Viewer
+        </span>
+      ),
+      children: <Empty />,
+      disabled: true,
     },
   ];
 
@@ -168,6 +165,20 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       size="small"
       defaultActiveKey="graph-editor"
       items={items}
+      tabBarExtraContent={
+        <Button
+          type="primary"
+          onClick={() => {
+            // @ts-ignore
+            chrome.tabs.create({
+              // @ts-ignore
+              url: chrome.runtime.getURL("index.html#/editor"),
+            });
+          }}
+        >
+          Open as Tab
+        </Button>
+      }
     />
   );
 };
