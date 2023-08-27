@@ -365,24 +365,27 @@ export const formatEntityIdOptions = (entities: Entity[] | undefined): GroupOpti
 export function makeQueryKnowledgeStr(params: Partial<Knowledge>): string {
     let query: ComposeQueryItem = {} as ComposeQueryItem;
 
-    let id_query_item = {} as QueryItem;
-    let curator_query_item = {} as QueryItem;
-    if (params.pmid && params.curator) {
-        id_query_item = {
+    let items = [];
+    if (params.pmid) {
+        items.push({
             operator: '=',
             field: 'pmid',
             value: params.pmid,
-        };
+        });
+    }
 
-        curator_query_item = {
+    if (params.curator) {
+        items.push({
             operator: '=',
             field: 'curator',
             value: params.curator,
-        };
+        })
+    }
 
+    if (items.length > 0) {
         query = {
             operator: 'and',
-            items: [id_query_item, curator_query_item],
+            items: items,
         };
 
         return JSON.stringify(query);

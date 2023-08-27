@@ -22,6 +22,7 @@ import {
   // @ts-ignore
 } from "@/api/swagger/KnowledgeGraph";
 import "./index.less";
+import { makeQueryKnowledgeStr } from "../../content/components/TableEditor/utils";
 
 type KnowledgeGraphEditorProps = {};
 
@@ -84,6 +85,9 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       getKnowledges({
         page: page,
         page_size: pageSize,
+        query_str: makeQueryKnowledgeStr({
+          curator: curator,
+        })
       })
         .then((response: any) => {
           console.log("Get knowledges: ", response);
@@ -138,11 +142,12 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       ),
       children: (
         <GraphTable
-          yScroll={'calc(100vh - 160px)'}
+          yScroll={"calc(100vh - 160px)"}
           key={refreshKey}
           getTableData={getKnowledgesData}
-          editKnowledge={editKnowledge}
-          deleteKnowledgeById={deleteKnowledgeById}
+          // Don'w allow to edit or delete the knowledge in a query table
+          // editKnowledge={editKnowledge}
+          // deleteKnowledgeById={deleteKnowledgeById}
         />
       ),
     },
