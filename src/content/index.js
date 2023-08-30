@@ -5,13 +5,13 @@ import { Row, Modal, message, Button } from "antd";
 import { CloudSyncOutlined, RestOutlined } from "@ant-design/icons";
 import ReactDOM from "react-dom";
 import TableEditor from "./components/TableEditor";
-import { exampleData } from "./components/TableEditor";
 import {
   fetchStatistics,
   initRequest,
   getToken,
 } from "@/api/swagger/KnowledgeGraph";
 import ButtonGroup from "antd/es/button/button-group";
+import { targetWebsite } from "@/api/swagger/KnowledgeGraph";
 
 import Icon from "./images/icon.png";
 
@@ -133,7 +133,7 @@ const formatData = (annotations) => {
 
 const getUser = () => {
   return new Promise((resolve, reject) => {
-    fetch("https://prophet-studio.3steps.cn/api/current-user/whoami")
+    fetch(`${targetWebsite}/api/current-user/whoami`)
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
@@ -158,7 +158,7 @@ const getAnnotations = () => {
 
   return new Promise((resolve, reject) => {
     if (taskId) {
-      fetch(`https://prophet-studio.3steps.cn/api/tasks/${taskId}`)
+      fetch(`${targetWebsite}/api/tasks/${taskId}`)
         .then((response) => response.json())
         .then((data) => {
           console.log("getAnnotations: ", data);
@@ -420,10 +420,12 @@ function Content() {
 
 const url = window.location.href;
 
-if (url.startsWith("https://prophet-studio.3steps.cn")) {
+if (url.startsWith(`${targetWebsite}/projects`)) {
+  console.log("Knowledge Graph Editor is running...")
   getToken().then((token) => {
     // Initalize the request configuration, load the authentication token from the local storage.
     initRequest(token);
+    console.log("Insert the knowledge graph editor into the page...");
     const app = document.createElement("div");
     app.id = "knowledge-graph-editor";
     document.body.appendChild(app);

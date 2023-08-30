@@ -172,6 +172,8 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       items={items}
       tabBarExtraContent={
         <Button
+          // @ts-ignore
+          disabled={!(chrome && chrome.tabs)}
           type="primary"
           onClick={() => {
             // @ts-ignore

@@ -2,8 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { ConfigProvider } from "antd";
 import enUS from "antd/lib/locale/en_US";
+import KGEditor from "./popup";
 
-import Popup from "./popup";
+import "@/content";
 
 const antdConfig = {
   locale: enUS,
@@ -11,7 +12,7 @@ const antdConfig = {
 
 ReactDOM.render(
   <ConfigProvider {...antdConfig}>
-    <Popup />
+    <KGEditor />
   </ConfigProvider>,
-  document.getElementById("root")
+  document.getElementById("kge-root")
 );

@@ -5,42 +5,69 @@
 /* eslint-disable */
 import request from 'umi-request';
 
-export const prefix = 'https://prophetdb.3steps.cn';
-export const targetWebsite = 'https://prophet-studio.3steps.cn';
+// @ts-ignore
+export const prefix = window.KNOWLEDGE_GRAPH_SERVER || 'https://prophetdb.3steps.cn';
+console.log('Knowledge Graph Server:', prefix);
+let defaultTargetWebsite = window.location.host;
+if (window.location.protocol === "chrome-extension:") {
+  defaultTargetWebsite = 'https://prophet-studio.3steps.cn'
+} else {
+  defaultTargetWebsite = window.location.protocol + '//' + window.location.host;
+}
+export const targetWebsite = defaultTargetWebsite;
+console.log('Target Website:', targetWebsite);
 // export const prefix = 'http://localhost:8000';
 
 export const setToken = (token: string) => {
   return new Promise((resolve, reject) => {
     // @ts-ignore
-    chrome.storage.local.set({ AUTH_TOKEN: token }).then(() => {
-      console.log("AUTH_TOKEN is set");
+    if (chrome && chrome.storage) {
+      // @ts-ignore
+      chrome.storage.local.set({ AUTH_TOKEN: token }).then(() => {
+        console.log("AUTH_TOKEN is set");
+        resolve("AUTH_TOKEN is set");
+      }).catch((err: any) => {
+        console.log("AUTH_TOKEN is not set");
+        reject(err);
+      });
+    } else {
+      console.log("Run in normal web page, auth token is set.")
+      window.localStorage.setItem('AUTH_TOKEN', token);
       resolve("AUTH_TOKEN is set");
-    }).catch((err: any) => {
-      console.log("AUTH_TOKEN is not set");
-      reject(err);
-    });
+    }
   });
 }
 
 export const getToken = (): Promise<string> => {
   return new Promise((resolve, reject) => {
     // @ts-ignore
-    chrome.storage.local.get(["AUTH_TOKEN"], (result: any) => {
+    if (chrome && chrome.storage) {
       // @ts-ignore
-      // console.log('result:', result, chrome.storage.local);
-      if (result.AUTH_TOKEN) {
-        resolve(result.AUTH_TOKEN);
+      chrome.storage.local.get(["AUTH_TOKEN"], (result: any) => {
+        // @ts-ignore
+        // console.log('result:', result, chrome.storage.local);
+        if (result.AUTH_TOKEN) {
+          resolve(result.AUTH_TOKEN);
+        } else {
+          reject('no token');
+        }
+      });
+    } else {
+      console.log("Run in normal web page, auth token is go")
+      const token = window.localStorage.getItem('AUTH_TOKEN');
+      if (token) {
+        resolve(token);
       } else {
         reject('no token');
       }
-    });
+    }
   });
 }
 
 export const getCurrentUser = () => {
   return new Promise((resolve, reject) => {
     getToken().then((token: string) => {
-      console.log("Token: ", token);
+      // console.log("Token: ", token);
       let payload = token.split(".")[1];
       let decodedPayload = decodeURIComponent(
         atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
