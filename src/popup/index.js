@@ -68,7 +68,7 @@ function Login() {
   }
 
   const afterLoginSuccess = () => {
-    message.success("Login successfully!");
+    message.success("Knowledge Graph Editor is ready!");
     setLoginFailed(false);
     setLoading(false);
     setLoggedIn(true);
