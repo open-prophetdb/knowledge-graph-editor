@@ -10,8 +10,9 @@ import Editor from "./Editor";
 import {
   prefix,
   setToken,
-  targetWebsite,
   getToken,
+  cleanToken,
+  getJwtAccessToken,
 } from "@/api/swagger/KnowledgeGraph";
 
 function Login() {
@@ -19,53 +20,13 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [kgeVisible, setKgeVisible] = useState(false);
+  const [times, setTimes] = useState(0);
+
+  const maxRetryTimes = 3;
 
   useEffect(() => {
     checkAuth();
   }, []);
-
-  function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    console.log("parts", parts);
-    if (parts.length === 2) return parts.pop().split(";").shift();
-  }
-
-  function getJwtAccessToken() {
-    const cookieQuery = {
-      url: targetWebsite,
-      name: "jwt_access_token",
-    };
-
-    return new Promise((resolve, reject) => {
-      if (chrome && chrome.tabs && chrome.cookies) {
-        chrome.tabs.query(
-          { active: true, currentWindow: true },
-          function (tabs) {
-            const tab = tabs[0].url;
-            const url = new URL(tab);
-            console.log("Current Tab url: ", url);
-
-            if (url.origin === targetWebsite) {
-              chrome.cookies.get(cookieQuery, function (cookie) {
-                if (cookie) {
-                  console.log("cookie", cookie);
-                  resolve(`Bearer ${cookie.value}`);
-                } else {
-                  reject("Cannot get the token from the prophet studio!");
-                }
-              });
-            } else {
-              reject("Please open the prophet studio and login first!");
-            }
-          }
-        );
-      } else {
-        console.log("Run in normal web page, auth token is go");
-        resolve(`Bearer ${getCookie(cookieQuery.name)}`);
-      }
-    });
-  }
 
   const afterLoginSuccess = () => {
     message.success("Knowledge Graph Editor is ready!");
@@ -76,6 +37,7 @@ function Login() {
 
   const afterLoginFailed = (err) => {
     message.error(err || "Cannot get the token from the prophet studio!");
+    cleanToken();
     setLoginFailed(true);
     setLoading(false);
     setLoggedIn(false);
@@ -87,39 +49,46 @@ function Login() {
       return;
     }
 
-    let AUTH_TOKEN = await getToken();
-    if (AUTH_TOKEN) {
-      setLoading(true);
-      const url = prefix + "/api/v1/statistics";
-      console.log("Access url: ", url);
-      fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: AUTH_TOKEN,
-        },
-      })
-        .then((res) => {
-          setToken(AUTH_TOKEN).then(() => {
-            afterLoginSuccess();
-          });
+    setTimes(times + 1);
+    getToken()
+      .then((AUTH_TOKEN) => {
+        setLoading(true);
+        const url = prefix + "/api/v1/statistics";
+        console.log("Access url: ", url);
+        fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: AUTH_TOKEN,
+          },
         })
-        .catch((err) => {
-          console.log("checkAuth error: ", err);
-          afterLoginFailed();
-        });
-    } else {
-      getJwtAccessToken()
-        .then((jwt_access_token) => {
-          if (jwt_access_token) {
-            setToken(jwt_access_token).then(() => {
+          .then((res) => {
+            setToken(AUTH_TOKEN).then(() => {
+              afterLoginSuccess();
+            });
+          })
+          .catch((err) => {
+            console.log("checkAuth error: ", err);
+            afterLoginFailed();
+          });
+      })
+      .catch((err) => {
+        // We might not get the token on the first time, because the label studio is not ready yet. So we need to try several times.
+        if (times < maxRetryTimes) {
+          getJwtAccessToken()
+            .then((jwt_access_token) => {
+              if (jwt_access_token) {
+                setToken(jwt_access_token).then(() => {
+                  checkAuth();
+                });
+              }
+            })
+            .catch((err) => {
               checkAuth();
             });
-          }
-        })
-        .catch((err) => {
+        } else {
           afterLoginFailed(err);
-        });
-    }
+        }
+      });
   };
 
   const showKGE = () => {
@@ -131,7 +100,12 @@ function Login() {
       <Editor />
     ) : (
       <div className="knowledge-graph-editor-container">
-        <Button icon={<ForkOutlined />} type="primary" shape="round" onClick={showKGE}>
+        <Button
+          icon={<ForkOutlined />}
+          type="primary"
+          shape="round"
+          onClick={showKGE}
+        >
           KG Editor
         </Button>
         <Modal

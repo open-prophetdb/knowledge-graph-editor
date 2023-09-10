@@ -112,27 +112,6 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
 
   const items = [
     {
-      key: "graph-editor",
-      label: (
-        <span>
-          <TableOutlined />
-          Editor
-        </span>
-      ),
-      children: (
-        <GraphForm
-          onSubmit={onSubmitKnowledge}
-          formData={formData}
-          onClose={() => {
-            setFormData({} as GraphEdge);
-          }}
-          getEntities={getEntities}
-          getStatistics={getStatistics}
-          curator={curator}
-        />
-      ),
-    },
-    {
       key: "table-viewer",
       label: (
         <span>
@@ -162,13 +141,34 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       children: <Empty />,
       disabled: true,
     },
+    {
+      key: "graph-editor",
+      label: (
+        <span>
+          <TableOutlined />
+          Editor
+        </span>
+      ),
+      children: (
+        <GraphForm
+          onSubmit={onSubmitKnowledge}
+          formData={formData}
+          onClose={() => {
+            setFormData({} as GraphEdge);
+          }}
+          getEntities={getEntities}
+          getStatistics={getStatistics}
+          curator={curator}
+        />
+      ),
+    },
   ];
 
   return (
     <Tabs
       className="knowledge-graph-editor"
       size="small"
-      defaultActiveKey="graph-editor"
+      defaultActiveKey="table-viewer"
       items={items}
       tabBarExtraContent={
         <Button

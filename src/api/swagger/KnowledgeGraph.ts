@@ -18,6 +18,54 @@ export const targetWebsite = defaultTargetWebsite;
 console.log('Target Website:', targetWebsite);
 // export const prefix = 'http://localhost:8000';
 
+export function getJwtAccessToken() {
+  const cookieQuery = {
+    url: targetWebsite,
+    name: "jwt_access_token",
+  };
+
+  return new Promise((resolve, reject) => {
+    // @ts-ignore
+    if (chrome && chrome.tabs && chrome.cookies) {
+      // @ts-ignore
+      chrome.tabs.query(
+        { active: true, currentWindow: true },
+        // @ts-ignore
+        function (tabs) {
+          const tab = tabs[0].url;
+          const url = new URL(tab);
+          console.log("Current Tab url: ", url);
+
+          if (url.origin === targetWebsite) {
+            // @ts-ignore
+            chrome.cookies.get(cookieQuery, function (cookie) {
+              if (cookie) {
+                console.log("cookie", cookie);
+                resolve(`Bearer ${cookie.value}`);
+              } else {
+                reject("Cannot get the token from the prophet studio!");
+              }
+            });
+          } else {
+            reject("Please open the prophet studio and login first!");
+          }
+        }
+      );
+    } else {
+      console.log("Run in normal web page, auth token is go");
+      resolve(`Bearer ${getCookie(cookieQuery.name)}`);
+    }
+  });
+}
+
+export function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  console.log("parts", parts);
+  // @ts-ignore
+  if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
 export const setToken = (token: string) => {
   return new Promise((resolve, reject) => {
     // @ts-ignore
@@ -36,6 +84,10 @@ export const setToken = (token: string) => {
       resolve("AUTH_TOKEN is set");
     }
   });
+}
+
+export const cleanToken = () => {
+  window.localStorage.removeItem('AUTH_TOKEN');
 }
 
 export const getToken = (): Promise<string> => {

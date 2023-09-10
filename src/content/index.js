@@ -8,7 +8,9 @@ import TableEditor from "./components/TableEditor";
 import {
   fetchStatistics,
   initRequest,
+  setToken,
   getToken,
+  getJwtAccessToken,
 } from "@/api/swagger/KnowledgeGraph";
 import ButtonGroup from "antd/es/button/button-group";
 import { targetWebsite } from "@/api/swagger/KnowledgeGraph";
@@ -343,7 +345,10 @@ function Content() {
               if (!response.tableData.total && !response.keySentences.length) {
                 const error = `No annotations found for the current user (${curator}) yet, please annotate them first.`;
                 message.warning(`${error}`, 20);
-              } else if (response.tableData.total === 0 || !response.tableData.total) {
+              } else if (
+                response.tableData.total === 0 ||
+                !response.tableData.total
+              ) {
                 message.error(
                   "No knowledge found, please annotate them first."
                 );
@@ -418,17 +423,43 @@ function Content() {
   );
 }
 
+const checkAuth = (times) => {
+  // We might not get the token on the first time, because the label studio is not ready yet. So we need to try several times.
+  const maxRetryTimes = 3;
+  getToken()
+    .then((token) => {
+      // Initalize the request configuration, load the authentication token from the local storage.
+      initRequest(token);
+      console.log("Insert the knowledge graph editor into the page...");
+      const app = document.createElement("div");
+      app.id = "knowledge-graph-editor";
+      document.body.appendChild(app);
+      ReactDOM.render(<Content />, app);
+    })
+    .catch((err) => {
+      if (times < maxRetryTimes) {
+        getJwtAccessToken()
+          .then((jwt_access_token) => {
+            if (jwt_access_token) {
+              setToken(jwt_access_token).then(() => {
+                checkAuth();
+              });
+            }
+          })
+          .catch((err) => {
+            checkAuth();
+          });
+      } else {
+        console.log(
+          "Failed to get the token, please check your network connection or login status."
+        );
+      }
+    });
+};
+
 const url = window.location.href;
 
 if (url.startsWith(`${targetWebsite}/projects`)) {
-  console.log("Knowledge Graph Editor is running...")
-  getToken().then((token) => {
-    // Initalize the request configuration, load the authentication token from the local storage.
-    initRequest(token);
-    console.log("Insert the knowledge graph editor into the page...");
-    const app = document.createElement("div");
-    app.id = "knowledge-graph-editor";
-    document.body.appendChild(app);
-    ReactDOM.render(<Content />, app);
-  });
+  console.log("Knowledge Graph Editor is running...");
+  checkAuth(0);
 }
