@@ -18,7 +18,7 @@ export const targetWebsite = defaultTargetWebsite;
 console.log('Target Website:', targetWebsite);
 // export const prefix = 'http://localhost:8000';
 
-export function getJwtAccessToken() {
+export function getJwtAccessToken(): Promise<string> {
   const cookieQuery = {
     url: targetWebsite,
     name: "jwt_access_token",
@@ -118,7 +118,7 @@ export const getToken = (): Promise<string> => {
 
 export const getCurrentUser = () => {
   return new Promise((resolve, reject) => {
-    getToken().then((token: string) => {
+    getJwtAccessToken().then((token: string) => {
       // console.log("Token: ", token);
       let payload = token.split(".")[1];
       let decodedPayload = decodeURIComponent(
@@ -139,15 +139,7 @@ export const getCurrentUser = () => {
   })
 }
 
-export const initRequest = (token?: string) => {
-  // When use initRequest in the popup page, we don't need to set the token. Because the token can be got from local storage directly. But when use initRequest in the content script, we need to set the token manually, because the content script can't get the token from the local storage of a chrome extension.
-  const auth_token = token || localStorage.getItem('AUTH_TOKEN');
-
-  if (auth_token) {
-    // Save the token to the local storage of current page. It may be a chrome extension page or a normal web page.
-    window.localStorage.setItem('AUTH_TOKEN', auth_token);
-  }
-
+export const initRequest = (auth_token: string) => {
   let headers: any = {
     'Content-Type': 'application/json',
   }

@@ -4,7 +4,7 @@
 import React, { useEffect } from "react";
 import GraphForm from "biominer-components/dist/esm/components/KnowledgeGraphEditor/GraphForm";
 import GraphTable from "biominer-components/dist/esm/components/KnowledgeGraphEditor/GraphTable";
-import { Row, Col, Tabs, Empty, Button } from "antd";
+import { Row, Col, Tabs, Empty, Button, Space } from "antd";
 import type {
   GraphEdge,
   GraphTableData,
@@ -27,21 +27,21 @@ import { makeQueryKnowledgeStr } from "../../content/components/TableEditor/util
 type KnowledgeGraphEditorProps = {};
 
 const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
-  // Initalize the request configuration, load the authentication token from the local storage.
-  initRequest();
   const [refreshKey, setRefreshKey] = React.useState<number>(0);
   const [curator, setCurator] = React.useState<string>(""); // TODO: get the curator from the jwt token
   const [formData, setFormData] = React.useState<GraphEdge>({} as GraphEdge);
 
   useEffect(() => {
-    getCurrentUser().then((username: any) => {
-      console.log("Get current user: ", username);
-      setCurator(username);
-    }).catch((error: any) => {
-      console.log("Get current user error: ", error);
-      setCurator("");
-    })
-  },  []);
+    getCurrentUser()
+      .then((username: any) => {
+        console.log("Get current user: ", username);
+        setCurator(username);
+      })
+      .catch((error: any) => {
+        console.log("Get current user error: ", error);
+        setCurator("");
+      });
+  }, []);
 
   const onSubmitKnowledge = (data: GraphEdge): Promise<GraphEdge> => {
     console.log("Submit knowledge: ", data);
@@ -77,18 +77,37 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
     });
   };
 
+  const forceUpdate = () => {
+    setRefreshKey(refreshKey + 1);
+  };
+
   const getKnowledgesData = (
     page: number,
     pageSize: number
   ): Promise<GraphTableData> => {
     return new Promise((resolve, reject) => {
-      getKnowledges({
+      let queryParams = {
         page: page,
         page_size: pageSize,
         query_str: makeQueryKnowledgeStr({
-          curator: curator,
-        })
-      })
+          curator: "anonymous",
+        }),
+      };
+
+      let queryStr = makeQueryKnowledgeStr({
+        curator: curator,
+      });
+
+      let newQueryParams: any = queryParams;
+      // Remove the empty fields
+      if (curator !== "") {
+        newQueryParams = {
+          ...queryParams,
+          query_str: queryStr,
+        };
+      }
+
+      getKnowledges(newQueryParams)
         .then((response: any) => {
           console.log("Get knowledges: ", response);
           resolve({
@@ -171,20 +190,25 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       defaultActiveKey="table-viewer"
       items={items}
       tabBarExtraContent={
-        <Button
-          // @ts-ignore
-          disabled={!(chrome && chrome.tabs)}
-          type="primary"
-          onClick={() => {
+        <Space>
+          <Button type="primary" onClick={() => forceUpdate()}>
+            Force Update
+          </Button>
+          <Button
             // @ts-ignore
-            chrome.tabs.create({
+            disabled={!(chrome && chrome.tabs)}
+            type="primary"
+            onClick={() => {
               // @ts-ignore
-              url: chrome.runtime.getURL("index.html#/editor"),
-            });
-          }}
-        >
-          Open as Tab
-        </Button>
+              chrome.tabs.create({
+                // @ts-ignore
+                url: chrome.runtime.getURL("index.html#/editor"),
+              });
+            }}
+          >
+            Open as Tab
+          </Button>
+        </Space>
       }
     />
   );

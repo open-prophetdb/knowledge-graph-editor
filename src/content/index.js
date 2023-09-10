@@ -8,8 +8,6 @@ import TableEditor from "./components/TableEditor";
 import {
   fetchStatistics,
   initRequest,
-  setToken,
-  getToken,
   getJwtAccessToken,
 } from "@/api/swagger/KnowledgeGraph";
 import ButtonGroup from "antd/es/button/button-group";
@@ -237,9 +235,9 @@ function Content() {
       })
       .catch((error) => {
         console.log(error);
-        message.error(
-          "Failed to get metadata for the knowledge-graph-editor extension, please check your network connection or login status."
-        );
+        // message.error(
+        //   "Failed to get metadata for the knowledge-graph-editor extension, please check your network connection or login status."
+        // );
         setStatistics({});
       });
   }, []);
@@ -255,9 +253,9 @@ function Content() {
 
   const loadData = () => {
     if (!curator) {
-      message.error(
-        "Failed to get the current user, please refresh your page or login status."
-      );
+      // message.error(
+      //   "Failed to get the current user, please refresh your page or login status."
+      // );
       return;
     }
 
@@ -426,35 +424,25 @@ function Content() {
 const checkAuth = (times) => {
   // We might not get the token on the first time, because the label studio is not ready yet. So we need to try several times.
   const maxRetryTimes = 3;
-  getToken()
-    .then((token) => {
-      // Initalize the request configuration, load the authentication token from the local storage.
-      initRequest(token);
-      console.log("Insert the knowledge graph editor into the page...");
-      const app = document.createElement("div");
-      app.id = "knowledge-graph-editor";
-      document.body.appendChild(app);
-      ReactDOM.render(<Content />, app);
-    })
-    .catch((err) => {
-      if (times < maxRetryTimes) {
-        getJwtAccessToken()
-          .then((jwt_access_token) => {
-            if (jwt_access_token) {
-              setToken(jwt_access_token).then(() => {
-                checkAuth();
-              });
-            }
-          })
-          .catch((err) => {
-            checkAuth();
-          });
-      } else {
-        console.log(
-          "Failed to get the token, please check your network connection or login status."
-        );
-      }
-    });
+  if (times < maxRetryTimes) {
+    getJwtAccessToken()
+      .then((jwt_access_token) => {
+        // Initalize the request configuration, load the authentication token from the local storage.
+        initRequest(jwt_access_token);
+        console.log("Insert the knowledge graph editor into the page...");
+        const app = document.createElement("div");
+        app.id = "knowledge-graph-editor";
+        document.body.appendChild(app);
+        ReactDOM.render(<Content />, app);
+      })
+      .catch((err) => {
+        checkAuth();
+      });
+  } else {
+    console.log(
+      "Failed to get the token, please check your network connection or login status."
+    );
+  }
 };
 
 const url = window.location.href;

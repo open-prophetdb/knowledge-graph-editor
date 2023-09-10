@@ -9,9 +9,7 @@ import "./index.less";
 import Editor from "./Editor";
 import {
   prefix,
-  setToken,
-  getToken,
-  cleanToken,
+  initRequest,
   getJwtAccessToken,
 } from "@/api/swagger/KnowledgeGraph";
 
@@ -28,8 +26,10 @@ function Login() {
     checkAuth();
   }, []);
 
-  const afterLoginSuccess = () => {
-    message.success("Knowledge Graph Editor is ready!");
+  const afterLoginSuccess = (token) => {
+    // Initalize the request configuration, load the authentication token from the local storage.
+    initRequest(token);
+    // message.success("Knowledge Graph Editor is ready!");
     setLoginFailed(false);
     setLoading(false);
     setLoggedIn(true);
@@ -37,7 +37,6 @@ function Login() {
 
   const afterLoginFailed = (err) => {
     message.error(err || "Cannot get the token from the prophet studio!");
-    cleanToken();
     setLoginFailed(true);
     setLoading(false);
     setLoggedIn(false);
@@ -50,45 +49,18 @@ function Login() {
     }
 
     setTimes(times + 1);
-    getToken()
-      .then((AUTH_TOKEN) => {
-        setLoading(true);
-        const url = prefix + "/api/v1/statistics";
-        console.log("Access url: ", url);
-        fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: AUTH_TOKEN,
-          },
+    // We might not get the token on the first time, because the label studio is not ready yet. So we need to try several times.
+    if (times < maxRetryTimes) {
+      getJwtAccessToken()
+        .then((jwt_access_token) => {
+          afterLoginSuccess(jwt_access_token);
         })
-          .then((res) => {
-            setToken(AUTH_TOKEN).then(() => {
-              afterLoginSuccess();
-            });
-          })
-          .catch((err) => {
-            console.log("checkAuth error: ", err);
-            afterLoginFailed();
-          });
-      })
-      .catch((err) => {
-        // We might not get the token on the first time, because the label studio is not ready yet. So we need to try several times.
-        if (times < maxRetryTimes) {
-          getJwtAccessToken()
-            .then((jwt_access_token) => {
-              if (jwt_access_token) {
-                setToken(jwt_access_token).then(() => {
-                  checkAuth();
-                });
-              }
-            })
-            .catch((err) => {
-              checkAuth();
-            });
-        } else {
-          afterLoginFailed(err);
-        }
-      });
+        .catch((err) => {
+          checkAuth();
+        });
+    } else {
+      afterLoginFailed();
+    }
   };
 
   const showKGE = () => {
