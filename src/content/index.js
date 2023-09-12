@@ -210,6 +210,7 @@ function Content() {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(false);
   const [curator, setCurator] = useState(""); // TODO: Get the current user from the backend
+  const [organizationId, setOrganizationId] = useState(""); // TODO: Get the organization id from the backend
   const [keySentences, setKeySentences] = useState([]);
   const [statistics, setStatistics] = useState({});
 
@@ -219,6 +220,7 @@ function Content() {
         .then((response) => {
           const current_curator = response.email;
           setCurator(current_curator);
+          setOrganizationId(response.active_organization);
         })
         .catch((error) => {
           reject(error);
@@ -276,6 +278,10 @@ function Content() {
               // Convert time to a string
               created_at: new Date().toISOString(),
               key_sentence: null,
+              payload: {
+                project_id: response.project ? `${response.project}` : '0',
+                organization_id: organizationId ? `${organizationId}` : '0',
+              }
             };
           });
 
