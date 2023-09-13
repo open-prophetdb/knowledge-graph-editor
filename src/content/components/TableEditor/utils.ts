@@ -442,7 +442,7 @@ export const fetchEntities = async (entityType: string, value: string, callback:
                     return { label: d.text, value: d.value, order: 0 };
                 });
 
-                callback(sortBy(options, ['label']));
+                callback(options);
             })
             .catch((error: any) => {
                 console.log('requestNodes Error: ', error);
