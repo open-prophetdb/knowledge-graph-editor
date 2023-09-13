@@ -3,6 +3,7 @@ import v from 'voca';
 // @ts-ignore
 import { fetchEntities as getEntities } from "@/api/swagger/KnowledgeGraph";
 import { Knowledge } from 'biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t';
+import { makeQueryEntityStr } from 'biominer-components/dist/esm/components/utils';
 
 export const commonOptions = [
     {
@@ -394,84 +395,40 @@ export function makeQueryKnowledgeStr(params: Partial<Knowledge>): string {
     }
 }
 
-export function makeQueryEntityStr(params: Partial<Entity>): string {
-    let query: ComposeQueryItem = {} as ComposeQueryItem;
-
-    let id_query_item = {} as QueryItem;
-    if (params.id) {
-        id_query_item = {
-            operator: 'ilike',
-            field: 'id',
-            value: `%${params.id}%`,
-        };
-    }
-
-    let name_query_item = {} as QueryItem;
-    if (params.name) {
-        name_query_item = {
-            operator: 'ilike',
-            field: 'name',
-            value: `%${params.name}%`,
-        };
-    }
-
-    let label_query_item = {} as QueryItem;
-    if (params.label) {
-        label_query_item = {
-            operator: '=',
-            field: 'label',
-            value: params.label,
-        };
-    }
-
-    if (id_query_item && name_query_item) {
-        query = {
-            operator: 'or',
-            items: [id_query_item, name_query_item],
-        };
-    } else if (id_query_item) {
-        query = {
-            operator: 'and',
-            items: [id_query_item],
-        };
-    } else if (name_query_item) {
-        query = {
-            operator: 'and',
-            items: [name_query_item],
-        };
-    }
-
-    if (query.operator == 'or') {
-        query = {
-            operator: 'and',
-            items: [query, label_query_item],
-        };
-    } else {
-        query = {
-            operator: 'and',
-            items: [...query.items, label_query_item],
-        };
-    }
-
-    return JSON.stringify(query);
-}
-
 let timeout: ReturnType<typeof setTimeout> | null;
 
 // This function is used to fetch the entities of the selected entity type.
 // All the entities will be added to the options as a dropdown list.
 export const fetchEntities = async (entityType: string, value: string, callback: (options: Options) => void) => {
+    // We might not get good results when the value is short than 3 characters.
+    if (value.length < 3) {
+        callback([]);
+        return;
+    }
+
     if (timeout) {
         clearTimeout(timeout);
         timeout = null;
     }
 
+    // TODO: Check if the value is a valid id.
+
+    let queryMap = {};
+    let order: string[] = [];
+    // If the value is a number, then maybe it is an id or xref but not for name or synonyms.
+    if (value && !isNaN(Number(value))) {
+        queryMap = { id: value, xrefs: value, label: entityType };
+        order = ['id', 'xrefs'];
+    } else {
+        queryMap = { name: value, synonyms: value, xrefs: value, id: value, label: entityType };
+        order = ['name', 'synonyms', 'xrefs', 'id'];
+    }
+
     const fetchData = () => {
-        console.log("fetchEntities: ", entityType, value)
         getEntities({
-            query_str: makeQueryEntityStr({ id: value, name: value, label: entityType }),
+            query_str: makeQueryEntityStr(queryMap, order),
             page: 1,
-            page_size: 100,
+            page_size: 50,
         })
             .then((response: EntityRecordsResponse) => {
                 const { records } = response;
