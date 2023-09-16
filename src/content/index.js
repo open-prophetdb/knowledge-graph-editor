@@ -236,6 +236,7 @@ function Content() {
         setStatistics(formatStat(response));
       })
       .catch((error) => {
+        message.error("Authentication failed, please relogin.");
         console.log(error);
         // message.error(
         //   "Failed to get metadata for the knowledge-graph-editor extension, please check your network connection or login status."
@@ -288,7 +289,7 @@ function Content() {
           const tableData = {
             total: knowledges.length,
             page: 1,
-            pageSize: knowledges.length,
+            pageSize: knowledges.length < 10 ? 10 : knowledges.length,
             data: knowledges,
           };
 

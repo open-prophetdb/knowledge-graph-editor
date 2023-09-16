@@ -94,6 +94,7 @@ interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
     callback: (any: any) => void
   ) => void;
   entityType?: string;
+  updateEntityType?: (entityType?: string) => string;
   updateCachedDataItem?: (
     key: string,
     item: Entity | string | OptionType
@@ -110,6 +111,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
   children,
   placeholder,
   entityType,
+  updateEntityType,
   options,
   onSearch,
   updateCachedDataItem,
@@ -260,7 +262,8 @@ const EditableCell: React.FC<EditableCellProps> = ({
         options={selectOptions}
         filterOption={false}
         loading={loading}
-        onSearch={(value) => {
+          onSearch={(value) => {
+          entityType = updateEntityType ? updateEntityType(entityType) : entityType;
           if (onSearch && entityType && value) {
             setSelectOptions(options || []);
             setLoading(true);
@@ -688,6 +691,9 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           placeholder: "Please select source id!",
           onSearch: fetchEntities,
           entityType: record.source_type,
+          updateEntityType: (entityType?: string) => {
+            return form.getFieldValue("source_type") || entityType;
+          },
           updateCachedDataItem: updateCachedDataItem,
         }),
       };
@@ -706,6 +712,9 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           placeholder: "Please select target id!",
           onSearch: fetchEntities,
           entityType: record.target_type,
+          updateEntityType: (entityType?: string) => {
+            return form.getFieldValue("target_type") || entityType;
+          },
           updateCachedDataItem: updateCachedDataItem,
         }),
       };
