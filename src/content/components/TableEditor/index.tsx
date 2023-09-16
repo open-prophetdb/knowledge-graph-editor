@@ -337,6 +337,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
   const [cachedData, setCachedData] = useState<CachedData>({});
   const [page, setPage] = useState<number>(props.data.page || 1);
   const [pageSize, setPageSize] = useState<number>(props.data.pageSize || 10);
+  const [total, setTotal] = useState<number>(props.data.total || 0);
   const [entityTypeOptions, setEntityTypeOptions] = useState<GroupOptions>([]);
 
   useEffect(() => {
@@ -362,6 +363,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           // Merge the data from database and the data from the table
           // If the data from the table is not same with the data from the database, we will use the data from the database, otherwise we will use the data from the table.
           const records = response.records;
+          setTotal(response.total);
           const newData = [...data];
           records.forEach((record: GraphEdge) => {
             const index = newData.findIndex(
@@ -841,7 +843,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
             pageSizeOptions: ["10", "20", "50", "100"],
             current: page,
             pageSize: pageSize,
-            total: props.data.total || 0,
+            total: total,
             position: ["bottomRight"],
             showTotal: (total) => {
               return `Total ${total} items`;
