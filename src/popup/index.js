@@ -9,9 +9,12 @@ import "./index.less";
 import Editor from "./Editor";
 import {
   prefix,
+  getProjectId,
   initRequest,
   getJwtAccessToken,
+  getUserFromToken,
 } from "@/api/swagger/KnowledgeGraph";
+import { get } from "lodash";
 
 function Login() {
   const [loginFailed, setLoginFailed] = useState(false);
@@ -19,6 +22,8 @@ function Login() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [kgeVisible, setKgeVisible] = useState(false);
   const [times, setTimes] = useState(0);
+  const [curator, setCurator] = useState(null);
+  const [activeOrg, setActiveOrg] = useState(null);
 
   const maxRetryTimes = 3;
 
@@ -53,6 +58,9 @@ function Login() {
     if (times < maxRetryTimes) {
       getJwtAccessToken()
         .then((jwt_access_token) => {
+          const user = getUserFromToken(jwt_access_token);
+          setCurator(user.username);
+          setActiveOrg(user.active_organization);
           afterLoginSuccess(jwt_access_token);
         })
         .catch((err) => {
@@ -84,12 +92,17 @@ function Login() {
           className="knowledge-graph-editor-modal"
           width={"100%"}
           title="Knowledge Graph Editor"
-          visible={kgeVisible}
+          open={kgeVisible}
           closable={true}
           onCancel={() => setKgeVisible(false)}
           footer={null}
         >
-          <Editor />
+          <Editor
+            key={`${curator}-${activeOrg}-${getProjectId()}`}
+            curator={curator}
+            activeOrg={activeOrg}
+            projectId={getProjectId()}
+          />
         </Modal>
       </div>
     )

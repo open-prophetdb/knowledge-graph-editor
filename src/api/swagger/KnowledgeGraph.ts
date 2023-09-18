@@ -53,7 +53,12 @@ export function getJwtAccessToken(): Promise<string> {
       );
     } else {
       console.log("Run in normal web page, auth token is go");
-      resolve(`Bearer ${getCookie(cookieQuery.name)}`);
+      const token = getCookie(cookieQuery.name);
+      if (token) {
+        resolve(`Bearer ${token}`);
+      } else {
+        reject("Cannot get the token from the prophet studio!");
+      }
     }
   });
 }
@@ -62,8 +67,12 @@ export function getCookie(name: string) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   console.log("parts", parts);
-  // @ts-ignore
-  if (parts.length === 2) return parts.pop().split(";").shift();
+  if (parts.length === 2) {
+    // @ts-ignore
+    return parts.pop().split(";").shift();
+  } else {
+    return null;
+  }
 }
 
 export const setToken = (token: string) => {
@@ -116,22 +125,41 @@ export const getToken = (): Promise<string> => {
   });
 }
 
+export const getProjectId = () => {
+  // More details about getting the current url, please access https://stackoverflow.com/a/59434377
+  const url = window.location.href;
+  // const url =
+  // "https://prophet-studio.3steps.cn/projects/14/data?tab=38&task=17696";
+  // Get the project id from the url with regex
+  const projectId = url.match(/projects\/(\d+)/);
+  if (projectId) {
+    return projectId[1];
+  } else {
+    return null;
+  }
+}
+
+export const getUserFromToken = (token: string) => {
+  // console.log("Token: ", token);
+  let payload = token.split(".")[1];
+  let decodedPayload = decodeURIComponent(
+    atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
+  let user = JSON.parse(decodedPayload);
+  return user;
+}
+
 export const getCurrentUser = () => {
   return new Promise((resolve, reject) => {
     getJwtAccessToken().then((token: string) => {
-      // console.log("Token: ", token);
-      let payload = token.split(".")[1];
-      let decodedPayload = decodeURIComponent(
-        atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-          .split("")
-          .map(function (c) {
-            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-          })
-          .join("")
-      );
-      let curator = JSON.parse(decodedPayload).username;
-      console.log("Curator: ", curator);
-      resolve(curator);
+      const user = getUserFromToken(token);
+      console.log("Curator: ", user);
+      resolve(user);
     }).catch((error: any) => {
       console.log("Get token error: ", error);
       reject(error);
@@ -176,6 +204,21 @@ export async function fetchEdgesAutoConnectNodes(
   });
 }
 
+/** Call `/api/v1/curated-graph` with query params to fetch curated graph. GET /api/v1/curated-graph */
+export async function fetchCuratedGraph(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.fetchCuratedGraphParams,
+  options?: { [key: string]: any },
+) {
+  return request<API.Graph>('/api/v1/curated-graph', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
 /** Call `/api/v1/curated-knowledges` with query params to fetch curated knowledges. GET /api/v1/curated-knowledges */
 export async function fetchCuratedKnowledges(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -202,6 +245,21 @@ export async function postCuratedKnowledge(
       'Content-Type': 'application/json',
     },
     data: body,
+    ...(options || {}),
+  });
+}
+
+/** Call `/api/v1/curated-knowledges-by-owner` with query params to fetch curated knowledges by owner. GET /api/v1/curated-knowledges-by-owner */
+export async function fetchCuratedKnowledgesByOwner(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.fetchCuratedKnowledgesByOwnerParams,
+  options?: { [key: string]: any },
+) {
+  return request<API.RecordResponseKnowledgeCuration>('/api/v1/curated-knowledges-by-owner', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
     ...(options || {}),
   });
 }

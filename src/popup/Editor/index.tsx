@@ -4,44 +4,54 @@
 import React, { useEffect } from "react";
 import GraphForm from "biominer-components/dist/esm/components/KnowledgeGraphEditor/GraphForm";
 import GraphTable from "biominer-components/dist/esm/components/KnowledgeGraphEditor/GraphTable";
-import { Row, Col, Tabs, Empty, Button, Space } from "antd";
+import KnowledgeGraph from "biominer-components/dist/esm/components/KnowledgeGraph";
+import { Row, Col, Tabs, Empty, Button, Space, Select, message } from "antd";
 import type {
   GraphEdge,
   GraphTableData,
 } from "biominer-components/dist/esm/components/KnowledgeGraphEditor/index.t";
+import type { GraphData } from "biominer-components/dist/esm/components/typings";
 import { TableOutlined, BulbOutlined, ForkOutlined } from "@ant-design/icons";
 import {
-  initRequest,
-  fetchCuratedKnowledges as getKnowledges,
+  fetchNodes,
+  postSubgraph,
+  deleteSubgraph,
+  fetchRelations,
+  fetchSubgraphs,
+  fetchEntity2d,
+  fetchEntityColorMap,
+  fetchSimilarityNodes,
+  fetchRelationCounts,
+  fetchOneStepLinkedNodes,
+  fetchEdgesAutoConnectNodes,
+  fetchCuratedGraph as getGraph,
+  fetchCuratedKnowledgesByOwner as getKnowledges,
   fetchStatistics as getStatistics,
   fetchEntities as getEntities,
   postCuratedKnowledge as postKnowledge,
   putCuratedKnowledge as putKnowledgeById,
   deleteCuratedKnowledge as deleteKnowledgeById,
-  getCurrentUser,
   // @ts-ignore
 } from "@/api/swagger/KnowledgeGraph";
 import "./index.less";
-import { makeQueryKnowledgeStr } from "../../content/components/TableEditor/utils";
 
-type KnowledgeGraphEditorProps = {};
+type KnowledgeGraphEditorProps = {
+  curator: string;
+  activeOrg: string;
+  projectId?: string;
+};
 
 const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
   const [refreshKey, setRefreshKey] = React.useState<number>(0);
-  const [curator, setCurator] = React.useState<string>(""); // TODO: get the curator from the jwt token
   const [formData, setFormData] = React.useState<GraphEdge>({} as GraphEdge);
-
-  useEffect(() => {
-    getCurrentUser()
-      .then((username: any) => {
-        console.log("Get current user: ", username);
-        setCurator(username);
-      })
-      .catch((error: any) => {
-        console.log("Get current user error: ", error);
-        setCurator("");
-      });
-  }, []);
+  const [currentMode, setCurrentMode] = React.useState<string>("curator");
+  const [page, setPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(10);
+  const [queryParams, setQueryParams] = React.useState<any>({}); // The query params for the getKnowledges and getGraph
+  const [graphData, setGraphData] = React.useState<GraphData>({
+    nodes: [],
+    edges: [],
+  });
 
   const onSubmitKnowledge = (data: GraphEdge): Promise<GraphEdge> => {
     console.log("Submit knowledge: ", data);
@@ -81,31 +91,54 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
     setRefreshKey(refreshKey + 1);
   };
 
+  useEffect(() => {
+    if (queryParams.curator) {
+      console.log("Knowledge graph editor props: ", props);
+      getGraph(queryParams)
+        .then((response: any) => {
+          console.log("Get graph: ", response);
+          let graphData: GraphData = {
+            nodes: response.nodes,
+            edges: response.edges,
+          };
+          setGraphData(graphData);
+        })
+        .catch((error: any) => {
+          console.log("Get graph error: ", error);
+          message.error("Failed to get graph data.");
+          setGraphData({
+            nodes: [],
+            edges: [],
+          });
+        });
+    }
+  }, [page, pageSize, queryParams]);
+
   const getKnowledgesData = (
     page: number,
     pageSize: number
   ): Promise<GraphTableData> => {
     return new Promise((resolve, reject) => {
-      let queryParams = {
+      let queryParams: any = {
         page: page,
         page_size: pageSize,
-        query_str: makeQueryKnowledgeStr({
-          curator: "anonymous",
-        }),
+        // Curator is required for the backend API
+        curator: props.curator,
+        strict_mode: true,
       };
 
-      let queryStr = makeQueryKnowledgeStr({
-        curator: curator,
-      });
+      if (currentMode === "organization") {
+        queryParams["organization_id"] = props.activeOrg;
+      } else if (currentMode === "project" && props.projectId) {
+        queryParams["project_id"] = props.projectId;
+      }
 
       let newQueryParams: any = queryParams;
-      // Remove the empty fields
-      if (curator !== "") {
-        newQueryParams = {
-          ...queryParams,
-          query_str: queryStr,
-        };
-      }
+
+      // Use the same query params for the getKnowledges and getGraph
+      setPage(page);
+      setPageSize(pageSize);
+      setQueryParams(newQueryParams); // Save the query params for the getGraph
 
       getKnowledges(newQueryParams)
         .then((response: any) => {
@@ -140,8 +173,8 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       ),
       children: (
         <GraphTable
-          yScroll={"calc(100vh - 160px)"}
-          key={refreshKey}
+          yScroll={"calc(100vh - 250px)"}
+          key={refreshKey + currentMode}
           getTableData={getKnowledgesData}
           // Don'w allow to edit or delete the knowledge in a query table
           // editKnowledge={editKnowledge}
@@ -157,8 +190,28 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
           Graph Viewer
         </span>
       ),
-      children: <Empty />,
-      disabled: true,
+      children: (
+        <KnowledgeGraph
+          key={refreshKey + currentMode}
+          data={graphData}
+          apis={{
+            GetEntitiesFn: getEntities,
+            GetStatisticsFn: getStatistics,
+            GetRelationsFn: fetchRelations,
+            GetRelationCountsFn: fetchRelationCounts,
+            GetGraphHistoryFn: fetchSubgraphs,
+            PostGraphHistoryFn: postSubgraph,
+            DeleteGraphHistoryFn: deleteSubgraph,
+            GetNodesFn: fetchNodes,
+            GetSimilarityNodesFn: fetchSimilarityNodes,
+            GetOneStepLinkedNodesFn: fetchOneStepLinkedNodes,
+            GetConnectedNodesFn: fetchEdgesAutoConnectNodes,
+            GetEntity2DFn: fetchEntity2d,
+            GetEntityColorMapFn: fetchEntityColorMap,
+          }}
+        />
+      ),
+      disabled: false,
     },
     {
       key: "graph-editor",
@@ -177,11 +230,16 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
           }}
           getEntities={getEntities}
           getStatistics={getStatistics}
-          curator={curator}
+          curator={props.curator}
         />
       ),
     },
   ];
+
+  const updateMode = (value: string) => {
+    console.log("Update mode: ", value);
+    setCurrentMode(value);
+  };
 
   return (
     <Tabs
@@ -191,6 +249,17 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       items={items}
       tabBarExtraContent={
         <Space>
+          <Select
+            onChange={updateMode}
+            defaultValue="curator"
+            style={{ width: 120 }}
+          >
+            <Select.Option value="curator">Curator</Select.Option>
+            <Select.Option value="organization">Organization</Select.Option>
+            <Select.Option disabled={!props.projectId} value="project">
+              Project
+            </Select.Option>
+          </Select>
           <Button type="primary" onClick={() => forceUpdate()}>
             Force Update
           </Button>
