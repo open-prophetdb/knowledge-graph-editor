@@ -176,6 +176,8 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
           yScroll={"calc(100vh - 250px)"}
           key={refreshKey + currentMode}
           getTableData={getKnowledgesData}
+          pageSize={pageSize}
+          page={page}
           // Don'w allow to edit or delete the knowledge in a query table
           // editKnowledge={editKnowledge}
           // deleteKnowledgeById={deleteKnowledgeById}
