@@ -24,6 +24,8 @@ export function getJwtAccessToken(): Promise<string> {
     name: "jwt_access_token",
   };
 
+  const failedMessage = "Cannot get the token from the prophet studio, please login first or relogin!";
+
   return new Promise((resolve, reject) => {
     // @ts-ignore
     if (chrome && chrome.tabs && chrome.cookies) {
@@ -43,7 +45,7 @@ export function getJwtAccessToken(): Promise<string> {
                 console.log("cookie", cookie);
                 resolve(`Bearer ${cookie.value}`);
               } else {
-                reject("Cannot get the token from the prophet studio!");
+                reject(failedMessage);
               }
             });
           } else {
@@ -57,7 +59,7 @@ export function getJwtAccessToken(): Promise<string> {
       if (token) {
         resolve(`Bearer ${token}`);
       } else {
-        reject("Cannot get the token from the prophet studio!");
+        reject(failedMessage);
       }
     }
   });
