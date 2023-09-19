@@ -443,7 +443,7 @@ const checkAuth = (times) => {
         ReactDOM.render(<Content />, app);
       })
       .catch((err) => {
-        checkAuth();
+        checkAuth(times + 1);
       });
   } else {
     console.log(

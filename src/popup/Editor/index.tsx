@@ -177,6 +177,7 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
           key={refreshKey + currentMode}
           getTableData={getKnowledgesData}
           pageSize={pageSize}
+          pageSizeOptions={['10', '20', '50', '100', '300', '500', '1000']}
           page={page}
           // Don'w allow to edit or delete the knowledge in a query table
           // editKnowledge={editKnowledge}

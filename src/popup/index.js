@@ -14,21 +14,20 @@ import {
   getJwtAccessToken,
   getUserFromToken,
 } from "@/api/swagger/KnowledgeGraph";
-import { get } from "lodash";
+
 
 function Login() {
   const [loginFailed, setLoginFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [kgeVisible, setKgeVisible] = useState(false);
-  const [times, setTimes] = useState(0);
   const [curator, setCurator] = useState(null);
   const [activeOrg, setActiveOrg] = useState(null);
 
   const maxRetryTimes = 3;
 
   useEffect(() => {
-    checkAuth();
+    checkAuth(1);
   }, []);
 
   const afterLoginSuccess = (token) => {
@@ -47,13 +46,12 @@ function Login() {
     setLoggedIn(false);
   };
 
-  const checkAuth = async () => {
+  const checkAuth = async (times) => {
     if (prefix.startsWith("http://localhost")) {
       setLoggedIn(true);
       return;
     }
 
-    setTimes(times + 1);
     // We might not get the token on the first time, because the label studio is not ready yet. So we need to try several times.
     if (times < maxRetryTimes) {
       getJwtAccessToken()
@@ -64,7 +62,7 @@ function Login() {
           afterLoginSuccess(jwt_access_token);
         })
         .catch((err) => {
-          checkAuth();
+          checkAuth(times + 1);
         });
     } else {
       afterLoginFailed();
