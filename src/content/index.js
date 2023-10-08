@@ -453,6 +453,7 @@ const checkAuth = (times) => {
     console.log(
       "Failed to get the token, please check your network connection or login status."
     );
+    logout();
   }
 };
 
