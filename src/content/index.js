@@ -11,7 +11,7 @@ import {
   getJwtAccessToken,
 } from "@/api/swagger/KnowledgeGraph";
 import ButtonGroup from "antd/es/button/button-group";
-import { targetWebsite } from "@/api/swagger/KnowledgeGraph";
+import { targetWebsite, logout } from "@/api/swagger/KnowledgeGraph";
 
 import Icon from "./images/icon.png";
 
@@ -66,6 +66,7 @@ const formatStat = (stat) => {
       }),
     };
   } else {
+    console.log("The stat is not compatible with the current version, please check your biomedgps version or KNOWLEDGE_GRAPH_SERVER setting.")
     return stat;
   }
 };
@@ -229,7 +230,10 @@ function Content() {
   };
 
   useEffect(() => {
-    getCurrentUser();
+    getCurrentUser().catch((error) => {
+      message.error("Authentication failed, please relogin.");
+      logout();
+    });
     fetchStatistics()
       .then((response) => {
         console.log("statistics", response);

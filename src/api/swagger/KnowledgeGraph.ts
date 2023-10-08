@@ -18,6 +18,14 @@ export const targetWebsite = defaultTargetWebsite;
 console.log('Target Website:', targetWebsite);
 // export const prefix = 'http://localhost:8000';
 
+export function logout() {
+  request.get(`${targetWebsite}/logout`).then((res: any) => {
+    console.log('Logout res: ', res);
+  }).catch((err: any) => {
+    console.log('Logout err: ', err);
+  })
+}
+
 export function getJwtAccessToken(): Promise<string> {
   const cookieQuery = {
     url: targetWebsite,

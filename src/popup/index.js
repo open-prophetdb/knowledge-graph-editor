@@ -40,7 +40,7 @@ function Login() {
   };
 
   const afterLoginFailed = (err) => {
-    message.error(err || "Cannot get the token from the prophet studio!");
+    message.error(err || "Cannot get the token from the prophet studio, please ensure you are logged in the prophet studio and try again or relogin.");
     setLoginFailed(true);
     setLoading(false);
     setLoggedIn(false);
