@@ -21,6 +21,7 @@ console.log('Target Website:', targetWebsite);
 export function logout() {
   request.get(`${targetWebsite}/logout`).then((res: any) => {
     console.log('Logout res: ', res);
+    window.location.href = targetWebsite;
   }).catch((err: any) => {
     console.log('Logout err: ', err);
   })
