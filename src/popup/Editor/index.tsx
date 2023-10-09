@@ -31,6 +31,7 @@ import {
   postCuratedKnowledge as postKnowledge,
   putCuratedKnowledge as putKnowledgeById,
   deleteCuratedKnowledge as deleteKnowledgeById,
+  checkChromeTabsVar,
   // @ts-ignore
 } from "@/api/swagger/KnowledgeGraph";
 import "./index.less";
@@ -268,7 +269,7 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
           </Button>
           <Button
             // @ts-ignore
-            disabled={!(chrome && chrome.tabs)}
+            disabled={!checkChromeTabsVar()}
             type="primary"
             onClick={() => {
               // @ts-ignore

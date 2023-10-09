@@ -27,6 +27,36 @@ export function logout() {
   })
 }
 
+export function checkChromeStorageVar() {
+  // To be compatible with the chrome extension, we need to check the chrome object. But in Safari, the chrome object is undefined and will cause the error.
+  // @ts-ignore
+  if (typeof chrome !== 'undefined' && chrome && chrome.storage) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function checkChromeTabsVar() {
+  // To be compatible with the chrome extension, we need to check the chrome object. But in Safari, the chrome object is undefined and will cause the error.
+  // @ts-ignore
+  if (typeof chrome !== 'undefined' && chrome && chrome.tabs) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function checkChromeCookiesVar() {
+  // To be compatible with the chrome extension, we need to check the chrome object. But in Safari, the chrome object is undefined and will cause the error.
+  // @ts-ignore
+  if (typeof chrome !== 'undefined' && chrome && chrome.cookies) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export function getJwtAccessToken(): Promise<string> {
   const cookieQuery = {
     url: targetWebsite,
@@ -36,8 +66,9 @@ export function getJwtAccessToken(): Promise<string> {
   const failedMessage = "Cannot get the token from the prophet studio, please login first or relogin!";
 
   return new Promise((resolve, reject) => {
+    // To be compatible with the chrome extension, we need to check the chrome object.
     // @ts-ignore
-    if (chrome && chrome.tabs && chrome.cookies) {
+    if (checkChromeTabsVar() && checkChromeCookiesVar()) {
       // @ts-ignore
       chrome.tabs.query(
         { active: true, currentWindow: true },
@@ -88,8 +119,7 @@ export function getCookie(name: string) {
 
 export const setToken = (token: string) => {
   return new Promise((resolve, reject) => {
-    // @ts-ignore
-    if (chrome && chrome.storage) {
+    if (checkChromeStorageVar()) {
       // @ts-ignore
       chrome.storage.local.set({ AUTH_TOKEN: token }).then(() => {
         console.log("AUTH_TOKEN is set");
@@ -112,8 +142,7 @@ export const cleanToken = () => {
 
 export const getToken = (): Promise<string> => {
   return new Promise((resolve, reject) => {
-    // @ts-ignore
-    if (chrome && chrome.storage) {
+    if (checkChromeStorageVar()) {
       // @ts-ignore
       chrome.storage.local.get(["AUTH_TOKEN"], (result: any) => {
         // @ts-ignore

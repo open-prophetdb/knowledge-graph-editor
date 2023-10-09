@@ -13,6 +13,8 @@ import {
   initRequest,
   getJwtAccessToken,
   getUserFromToken,
+  checkChromeCookiesVar,
+  checkChromeTabsVar,
 } from "@/api/swagger/KnowledgeGraph";
 
 
@@ -74,7 +76,8 @@ function Login() {
   };
 
   return loggedIn ? (
-    chrome && chrome.tabs && chrome.cookies ? (
+    // To be compatible with the chrome extension, we need to check the chrome object.
+    (checkChromeTabsVar() && checkChromeCookiesVar()) ? (
       <Editor />
     ) : (
       <div className="knowledge-graph-editor-container">
