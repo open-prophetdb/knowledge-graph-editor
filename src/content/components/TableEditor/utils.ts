@@ -395,6 +395,42 @@ export function makeQueryKnowledgeStr(params: Partial<Knowledge>): string {
     }
 }
 
+export const checkNodeId = (nodeType: string, nodeId: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const queryStr = {
+            operator: 'and',
+            items: [
+                {
+                    operator: '=',
+                    field: 'id',
+                    value: nodeId,
+                },
+                {
+                    operator: '=',
+                    field: 'label',
+                    value: nodeType,
+                },
+            ],
+        }
+
+        getEntities({
+            query_str: JSON.stringify(queryStr),
+            page: 1,
+            page_size: 10,
+        }).then((response: EntityRecordsResponse) => {
+            const { records } = response;
+            if (records.length == 1) {
+                resolve(records[0].id);
+            } else {
+                reject("Id and node type do not match.");
+            }
+        }).catch((error: any) => {
+            console.log("checkNodeId Error: ", error);
+            reject(error);
+        });
+    });
+}
+
 let timeout: ReturnType<typeof setTimeout> | null;
 
 // This function is used to fetch the entities of the selected entity type.

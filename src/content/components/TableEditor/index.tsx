@@ -37,6 +37,7 @@ import type {
 import {
   formatEntityTypeOptions,
   fetchEntities,
+  checkNodeId,
   formatKeySentenceOptions,
   formatRelationTypeOptions,
   makeQueryKnowledgeStr,
@@ -99,6 +100,10 @@ interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
     key: string,
     item: Entity | string | OptionType
   ) => void;
+  dynamicCheckRule?: {
+    validator: (rule: any, value: any) => Promise<void>;
+    message?: string;
+  };
 }
 
 const EditableCell: React.FC<EditableCellProps> = ({
@@ -114,6 +119,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
   updateEntityType,
   options,
   onSearch,
+  dynamicCheckRule,
   updateCachedDataItem,
   ...restProps
 }) => {
@@ -323,6 +329,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
               required: true,
               message: placeholder,
             },
+            dynamicCheckRule ? dynamicCheckRule : {},
           ]}
         >
           {inputNode}
@@ -694,6 +701,16 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           updateEntityType: (entityType?: string) => {
             return form.getFieldValue("source_type") || entityType;
           },
+          dynamicCheckRule: {
+            validator: (rule: any, value: string) => {
+              const sourceType = form.getFieldValue('source_type');
+              if (value && sourceType) {
+                checkNodeId(sourceType, value);
+              } else {
+                return Promise.reject('Please select source type and source id first!');
+              }
+            }
+          },
           updateCachedDataItem: updateCachedDataItem,
         }),
       };
@@ -714,6 +731,16 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           entityType: record.target_type,
           updateEntityType: (entityType?: string) => {
             return form.getFieldValue("target_type") || entityType;
+          },
+          dynamicCheckRule: {
+            validator: (rule: any, value: string) => {
+              const sourceType = form.getFieldValue('source_type');
+              if (value && sourceType) {
+                checkNodeId(sourceType, value);
+              } else {
+                return Promise.reject('Please select source type and source id first!');
+              }
+            }
           },
           updateCachedDataItem: updateCachedDataItem,
         }),
