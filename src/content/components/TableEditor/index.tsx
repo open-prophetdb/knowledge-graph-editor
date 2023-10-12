@@ -705,9 +705,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
             validator: (rule: any, value: string) => {
               const sourceType = form.getFieldValue('source_type');
               if (value && sourceType) {
-                checkNodeId(sourceType, value);
-              } else {
-                return Promise.reject('Please select source type and source id first!');
+                return checkNodeId(sourceType, value);
               }
             }
           },
@@ -734,11 +732,9 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           },
           dynamicCheckRule: {
             validator: (rule: any, value: string) => {
-              const sourceType = form.getFieldValue('source_type');
-              if (value && sourceType) {
-                checkNodeId(sourceType, value);
-              } else {
-                return Promise.reject('Please select source type and source id first!');
+              const targetType = form.getFieldValue('target_type');
+              if (value && targetType) {
+                return checkNodeId(targetType, value);
               }
             }
           },
