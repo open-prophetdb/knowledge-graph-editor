@@ -396,6 +396,11 @@ export function makeQueryKnowledgeStr(params: Partial<Knowledge>): string {
 }
 
 export const checkNodeId = (nodeType: string, nodeId: string): Promise<string> => {
+    // We need to keep all Unknown nodes for learning how many nodes are not in our database.
+    if (nodeId == "Unknown:Unknown") {
+        return Promise.resolve(nodeId);
+    }
+
     return new Promise((resolve, reject) => {
         const queryStr = {
             operator: 'and',

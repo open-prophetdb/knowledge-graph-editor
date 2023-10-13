@@ -42,13 +42,22 @@ type KnowledgeGraphEditorProps = {
   projectId?: string;
 };
 
+type QueryParams = {
+  page: number;
+  page_size: number;
+  curator: string;
+  strict_mode: boolean;
+  organization_id?: string;
+  project_id?: string;
+}
+
 const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
   const [refreshKey, setRefreshKey] = React.useState<number>(0);
   const [formData, setFormData] = React.useState<GraphEdge>({} as GraphEdge);
   const [currentMode, setCurrentMode] = React.useState<string>("curator");
   const [page, setPage] = React.useState<number>(1);
   const [pageSize, setPageSize] = React.useState<number>(10);
-  const [queryParams, setQueryParams] = React.useState<any>({}); // The query params for the getKnowledges and getGraph
+  const [queryParams, setQueryParams] = React.useState<QueryParams>({} as QueryParams); // The query params for the getKnowledges and getGraph
   const [graphData, setGraphData] = React.useState<GraphData>({
     nodes: [],
     edges: [],
@@ -98,6 +107,13 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
       getGraph(queryParams)
         .then((response: any) => {
           console.log("Get graph: ", response);
+          const numOfEdges = response.edges.length;
+
+          if (numOfEdges < pageSize) {
+            // There are some edges have been filtered out, because they are Unknown:Unknown or invalid node ids.
+            message.warning("Some edges have not been shown in the graph, because they are Unknown:Unknown or invalid node ids.");
+          }
+
           let graphData: GraphData = {
             nodes: response.nodes,
             edges: response.edges,
@@ -120,7 +136,7 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
     pageSize: number
   ): Promise<GraphTableData> => {
     return new Promise((resolve, reject) => {
-      let queryParams: any = {
+      let queryParams: QueryParams = {
         page: page,
         page_size: pageSize,
         // Curator is required for the backend API
@@ -134,7 +150,7 @@ const KnowledgeGraphEditor: React.FC<KnowledgeGraphEditorProps> = (props) => {
         queryParams["project_id"] = props.projectId;
       }
 
-      let newQueryParams: any = queryParams;
+      let newQueryParams: QueryParams = queryParams;
 
       // Use the same query params for the getKnowledges and getGraph
       setPage(page);
