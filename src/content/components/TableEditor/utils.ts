@@ -43,6 +43,8 @@ export type Entity = {
     resource: string;
     taxid: string;
     description?: string;
+    synonyms?: string;
+    xrefs?: string;
 };
 
 export type CachedData = Record<string, Array<Entity | string | OptionType>>;
@@ -51,6 +53,8 @@ export type OptionType = {
     order: number;
     label: string;
     value: string;
+    disabled?: boolean;
+    metadata?: Entity;
 };
 
 export type GroupOptionType = { label: string, options: OptionType[] }
@@ -292,14 +296,24 @@ export const formatRelationTypeOptions = (items: RelationStat[], record: Knowled
     ]
 };
 
+export const formatSpecies = (taxid: string): string => {
+    const speciesDict: Record<string, string> = {
+        "9606": "Human",
+        "10090": "Mouse",
+        "10116": "Rat"
+    };
+
+    if (taxid in speciesDict) {
+        return speciesDict[taxid];
+    } else {
+        return "Unknown";
+    }
+}
+
 export const formatLabelOption = (item: Entity): string => {
     if (item.label == "Gene") {
         // TODO: How to deal with multiple species in the future?
-        if (item.taxid) {
-            return `${item.name} | ${item.id} | ${item.taxid}`;
-        } else {
-            return `${item.name} | ${item.id} | Unknown`;
-        }
+        return `${item.name} | ${item.id} | ${formatSpecies(item.taxid)}`;
     } else {
         return `${item.name} | ${item.id}`;
     }
@@ -476,11 +490,12 @@ export const fetchEntities = async (entityType: string, value: string, callback:
                 const formatedData = records.map((item: Entity) => ({
                     value: `${item['id']}`,
                     text: formatLabelOption(item),
+                    metadata: item,
                 }));
                 console.log('Get Entities: ', formatedData, records);
                 // const options = formatedData.map(d => <Option key={d.value}>{d.text}</Option>);
                 const options = formatedData.map((d: any) => {
-                    return { label: d.text, value: d.value, order: 0 };
+                    return { label: d.text, value: d.value, order: 0, metadata: d.metadata, disabled: false };
                 });
 
                 callback(options);

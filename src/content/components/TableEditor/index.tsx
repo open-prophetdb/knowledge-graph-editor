@@ -104,6 +104,7 @@ interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
     validator: (rule: any, value: any) => Promise<void>;
     message?: string;
   };
+  parentId?: string;
 }
 
 const EditableCell: React.FC<EditableCellProps> = ({
@@ -118,6 +119,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
   entityType,
   updateEntityType,
   options,
+  parentId,
   onSearch,
   dynamicCheckRule,
   updateCachedDataItem,
@@ -255,6 +257,45 @@ const EditableCell: React.FC<EditableCellProps> = ({
     return [];
   };
 
+  const EntityCard = (metadata: Entity | undefined) => {
+    if (!metadata) {
+      return (
+        <div>
+          No metadata found!
+        </div>
+      );
+    } else {
+      return (
+        <div>
+          <p style={{ marginBottom: "5px" }}>
+            <span style={{ fontWeight: "bold" }}>Synonyms: </span>
+            {metadata.synonyms || "No synonyms found!"}
+          </p>
+          <p style={{ marginBottom: "5px" }}>
+            <span style={{ fontWeight: "bold" }}>Xrefs: </span>
+            {metadata.xrefs || "No xrefs found!"}
+          </p>
+          <p style={{ marginBottom: "5px" }}>
+            <span style={{ fontWeight: "bold" }}>Description: </span>
+            {metadata.description || "No description found!"}
+          </p>
+          <p style={{ marginBottom: "5px" }}>
+            <span style={{ fontWeight: "bold" }}>ID: </span>
+            {metadata.id}
+          </p>
+          <p style={{ marginBottom: "5px" }}>
+            <span style={{ fontWeight: "bold" }}>Name: </span>
+            {metadata.name}
+          </p>
+          <p style={{ marginBottom: "5px" }}>
+            <span style={{ fontWeight: "bold" }}>Label: </span>
+            {metadata.label}
+          </p>
+        </div>
+      );
+    }
+  }
+
   const inputNode =
     inputType === "text" ? (
       <TextArea rows={8} placeholder="Please input key sentence!" />
@@ -265,10 +306,10 @@ const EditableCell: React.FC<EditableCellProps> = ({
         defaultActiveFirstOption={false}
         placeholder={placeholder}
         // @ts-ignore
-        options={selectOptions}
+        // options={selectOptions}
         filterOption={false}
         loading={loading}
-          onSearch={(value) => {
+        onSearch={(value) => {
           entityType = updateEntityType ? updateEntityType(entityType) : entityType;
           if (onSearch && entityType && value) {
             setSelectOptions(options || []);
@@ -304,9 +345,10 @@ const EditableCell: React.FC<EditableCellProps> = ({
             entityType &&
             option.label !== "Unknown"
           ) {
+            console.log("onSelect: ", value, option);
             // Keep the selected entity in cache for future use
             updateCachedDataItem("entityOptions", {
-              label: option.label,
+              label: option.key,
               value: value,
               order: 0,
             });
@@ -315,7 +357,50 @@ const EditableCell: React.FC<EditableCellProps> = ({
         notFoundContent={
           <Empty description={options ? placeholder : "Not Found"} />
         }
-      ></Select>
+      >
+        {
+          isGroupOptions(selectOptions) ? selectOptions.map((groupOption) => {
+            console.log("Group Option: ", groupOption);
+            return (
+              groupOption.options && groupOption.options.length > 0 &&
+              <Select.OptGroup label={groupOption.label} key={groupOption.label}>
+                {groupOption.options.map((option) => {
+                  return (
+                    <Select.Option
+                      key={option.label}
+                      value={option.value}
+                      disabled={option.disabled}
+                    >
+                      {option.metadata ? (
+                        <Popover placement="rightTop" title={option.label} content={EntityCard(option.metadata)}
+                          trigger="hover" getPopupContainer={(triggeredNode) => (parentId && document.getElementById(parentId)) || triggeredNode} overlayClassName="entity-id-popover" autoAdjustOverflow={false}
+                        >
+                          {option.label}
+                        </Popover>
+                      ) : (
+                        option.label
+                      )}
+                    </Select.Option>
+                  );
+                })}
+              </Select.OptGroup>
+            );
+          }) : selectOptions.map((option) => {
+            // Some options may not be a group option, so we need to wrap it with a Select.Option directly.
+            return (
+              <Select.Option
+                key={option.label}
+                // @ts-ignore
+                value={option.value}
+                // @ts-ignore
+                disabled={option.disabled}
+              >
+                {option.label}
+              </Select.Option>
+            );
+          })
+        }
+      </Select>
     );
 
   return (
@@ -692,6 +777,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           record,
           inputType: "select",
           dataIndex: "source_id",
+          parentId: "graph-table-container", // Please refer to a suitable container for the popover
           title: col.title,
           editing: isEditing(record),
           options: formatEntityIdOptions([]),
@@ -721,6 +807,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           record,
           inputType: "select",
           dataIndex: "target_id",
+          parentId: "graph-table-container", // Please refer to a suitable container for the popover
           title: col.title,
           editing: isEditing(record),
           options: formatEntityIdOptions([]),
@@ -854,7 +941,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
   // console.log("Merged Columns: ", columns, mergedColumns, props.data.data);
 
   return (
-    <Row className="graph-table-container">
+    <Row className="graph-table-container" id="graph-table-container">
       <Form form={form} component={false}>
         <Table
           size="small"
