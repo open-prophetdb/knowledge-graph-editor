@@ -373,7 +373,8 @@ const EditableCell: React.FC<EditableCellProps> = ({
                     >
                       {option.metadata ? (
                         <Popover placement="rightTop" title={option.label} content={EntityCard(option.metadata)}
-                          trigger="hover" getPopupContainer={(triggeredNode) => (parentId && document.getElementById(parentId)) || triggeredNode} overlayClassName="entity-id-popover" autoAdjustOverflow={false}
+                          trigger="hover" getPopupContainer={(triggeredNode) => (parentId && document.getElementById(parentId)) || document.getElementById(dataIndex) || triggeredNode} overlayClassName="entity-id-popover" autoAdjustOverflow={false} arrow={false}
+                          destroyTooltipOnHide={true} zIndex={1000}
                         >
                           {option.label}
                         </Popover>
@@ -404,7 +405,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
     );
 
   return (
-    <td {...restProps}>
+    <td {...restProps} id={dataIndex}>
       {editing ? (
         <Form.Item
           name={dataIndex}
@@ -596,7 +597,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
       dataIndex: "key_sentence",
       align: "center",
       key: "key_sentence",
-      width: 150,
+      width: 240,
       ellipsis: true,
     },
     // {
@@ -777,7 +778,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           record,
           inputType: "select",
           dataIndex: "source_id",
-          parentId: "graph-table-container", // Please refer to a suitable container for the popover
+          // parentId: "graph-table-container", // Please refer to a suitable container for the popover
           title: col.title,
           editing: isEditing(record),
           options: formatEntityIdOptions([]),
@@ -807,7 +808,7 @@ const GraphTable: React.FC<GraphTableProps> = (props) => {
           record,
           inputType: "select",
           dataIndex: "target_id",
-          parentId: "graph-table-container", // Please refer to a suitable container for the popover
+          // parentId: "graph-table-container", // Please refer to a suitable container for the popover
           title: col.title,
           editing: isEditing(record),
           options: formatEntityIdOptions([]),
