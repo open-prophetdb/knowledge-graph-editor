@@ -241,6 +241,15 @@ const EditableCell: React.FC<EditableCellProps> = ({
       options[2].options = newSearchOptions;
     }
 
+    console.log("Merge options: ", options, mergedOptions, newSearchOptions);
+
+    // Remove Unknown option from History
+    if (options[1].options) {
+      options[1].options = options[1].options.filter(
+        (option) => option.label !== "Unknown"
+      );
+    }
+
     setSelectOptions(options);
   };
 
@@ -310,8 +319,15 @@ const EditableCell: React.FC<EditableCellProps> = ({
         filterOption={false}
         loading={loading}
         onSearch={(value) => {
+          // Only work for entity id
+          // We need to use a new entity type to search after the entity type is changed.
           entityType = updateEntityType ? updateEntityType(entityType) : entityType;
           if (onSearch && entityType && value) {
+            // Remove all items in History and Search Results group
+            let options = selectOptions.filter(
+              (option) =>
+                option.label !== "History" && option.label !== "Search Results"
+            )
             setSelectOptions(options || []);
             setLoading(true);
             onSearch(entityType, value, (data: Options) => {
